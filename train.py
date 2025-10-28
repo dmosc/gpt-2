@@ -111,8 +111,20 @@ class GPT(nn.Module):
             ln_f=nn.LayerNorm(config.n_embd),
         ))
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
+        # Weight tying scheme: https://arxiv.org/pdf/1608.05859
+        self.transformer.wte.weight = self.lm_head.weight
+        # Initialize weights a la GPT-2. .apply will recursively apply the
+        # _init_weights method to every module in the model.
+        self.apply(self._init_weights)
 
-    def forward(self, idx):
+    def _init_weights(self, module):
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            torch.nn.init.normal_(module.weight, mean=0.0,
+                                  std=0.02)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            torch.nn.init.zeros_(module.bias)
+
+    def forward(self, idx, targets=None):
         # idx is of shape (B, T) where B is batch size, T is sequence length
         B, T = idx.size()
         assert T <= self.config.block_size, "Cannot forward, model block size is exhausted."
@@ -131,7 +143,11 @@ class GPT(nn.Module):
         x = self.transformer.ln_f(x)
         # (B, T, vocab_size)
         logits = self.lm_head(x)
-        return logits
+        loss = None
+        if targets is not None:
+            loss = F.cross_entropy(
+                logits.view(-1, logits.size(-1)), targets.view(-1))
+        return logits, loss
 
     @classmethod
     def from_pretrained(cls, model_type):
