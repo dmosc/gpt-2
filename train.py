@@ -25,6 +25,12 @@ class MLP(nn.Module):
         self.c_fc = nn.Linear(config.n_embd, 4 * config.n_embd)
         self.gelu = nn.GELU(approximate='tanh')
         self.c_proj = nn.Linear(4 * config.n_embd, config.n_embd)
+        # A modified initialization which accounts for the accumulation
+        # on the residual path with model depth is used. We scale the weights
+        # of residual layers at initialization by a factor of 1/sqrt(N) where N
+        # is the number of residual layers.
+        # We multiply by 2 because the number of layers per block is 2 (attn + mlp).
+        self.c_proj.std_init = (2 * config.n_layer) ** -0.5
 
     def forward(self, x):
         x = self.c_fc(x)
@@ -41,6 +47,12 @@ class CausalSelfAttention(nn.Module):
         self.c_attn = nn.Linear(config.n_embd, 3 * config.n_embd)
         # output projection
         self.c_proj = nn.Linear(config.n_embd, config.n_embd)
+        # A modified initialization which accounts for the accumulation
+        # on the residual path with model depth is used. We scale the weights
+        # of residual layers at initialization by a factor of 1/sqrt(N) where N
+        # is the number of residual layers.
+        # We multiply by 2 because the number of layers per block is 2 (attn + mlp).
+        self.c_proj.std_init = (2 * config.n_layer) ** -0.5
         # regularization
         self.n_head = config.n_head
         self.n_embd = config.n_embd
@@ -113,14 +125,16 @@ class GPT(nn.Module):
         self.lm_head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
         # Weight tying scheme: https://arxiv.org/pdf/1608.05859
         self.transformer.wte.weight = self.lm_head.weight
-        # Initialize weights a la GPT-2. .apply will recursively apply the
+        # Initialize weights a la GPT-2, apply will recursively apply the
         # _init_weights method to every module in the model.
         self.apply(self._init_weights)
 
     def _init_weights(self, module):
+        std = 0.02
+        if isinstance(module, nn.Linear) and hasattr(module, 'std_init'):
+            std *= module.std_init
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            torch.nn.init.normal_(module.weight, mean=0.0,
-                                  std=0.02)
+            torch.nn.init.normal_(module.weight, mean=0.0, std=std)
         if isinstance(module, nn.Linear) and module.bias is not None:
             torch.nn.init.zeros_(module.bias)
 
