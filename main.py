@@ -1,3 +1,4 @@
+import time
 import torch
 from torch.nn import functional as F
 
@@ -5,8 +6,8 @@ from train import GPT, GPTConfig
 from dataloader import DataLoader
 
 # Global variables.
-batch_size = 4
-block_size = 32
+batch_size = 16
+block_size = 1024
 learning_rate = 3e-4
 epochs = 50
 
@@ -31,12 +32,17 @@ if __name__ == '__main__':
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     data_loader = DataLoader('input.txt', batch_size, block_size)
     for epoch in range(epochs):
+        start_time = time.time()
         optimizer.zero_grad()
         x, y = data_loader.get_next_batch()
         logits, loss = model(x.to(device), y.to(device))
         loss.backward()
         optimizer.step()
-        print(f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}')
+        torch.mps.synchronize()
+        end_time = time.time()
+        tok_per_sec = batch_size * block_size / (end_time - start_time)
+        print(
+            f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
     # while x.size(1) < max_length:
     #     # forward the model to get the logits
     #     with torch.no_grad():
