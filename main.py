@@ -29,6 +29,10 @@ if __name__ == '__main__':
     model = GPT(GPTConfig())
     model.eval()
     model.to(device)
+    # This is a default preference that should always be set to improve training
+    # speed but I'm disabling it for now because with not enough resources it
+    # fails with "Not enough SMs to use max_autotune_gemm mode".
+    # model = torch.compile(model)
     print('model loaded successfully')
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     data_loader = DataLoader('input.txt', batch_size, block_size)
@@ -45,30 +49,3 @@ if __name__ == '__main__':
         tok_per_sec = batch_size * block_size / (end_time - start_time)
         print(
             f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
-    # while x.size(1) < max_length:
-    #     # forward the model to get the logits
-    #     with torch.no_grad():
-    #         # (B, T, vocab_size)
-    #         # take the logits at the last position
-    #         # (B, vocab_size)
-    #         logits = logits[:, -1, :]
-    #         # get the probabilities
-    #         probs = F.softmax(logits, dim=-1)
-    #         # do top-k sampling of 50 (HF pipeline default)
-    #         # topk_probs and topk_indices becomes (num_return_sequences, 50)
-    #         topk_probs, topk_indices = torch.topk(probs, k=50, dim=-1)
-    #         # select a token from the top-k probs
-    #         # (B, 1)
-    #         ix = torch.multinomial(topk_probs, num_samples=1)
-    #         # gather corresponding token indices
-    #         # (B, 1)
-    #         xcol = torch.gather(topk_indices, dim=-1, index=ix)
-    #         # append to the sequence
-    #         x = torch.cat((x, xcol), dim=1)
-    # decode the generated sequences
-    # for i in range(num_return_sequences):
-    #     generated_sequence = x[i].tolist()
-    #     text = tokenizer.decode(generated_sequence)
-    #     print(f'=== GENERATED SEQUENCE {i+1} ===')
-    #     print(text)
-    #     print()
