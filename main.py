@@ -36,7 +36,8 @@ if __name__ == '__main__':
         start_time = time.time()
         optimizer.zero_grad()
         x, y = data_loader.get_next_batch()
-        logits, loss = model(x.to(device), y.to(device))
+        with torch.autocast(device_type=device, dtype=torch.bfloat16):
+            logits, loss = model(x.to(device), y.to(device))
         loss.backward()
         optimizer.step()
         torch.mps.synchronize()
