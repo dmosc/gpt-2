@@ -9,7 +9,7 @@ from dataloader import DataLoader
 batch_size = 16
 block_size = 1024
 learning_rate = 3e-4
-epochs = 50
+steps = 50
 
 
 def get_device():
@@ -36,8 +36,10 @@ if __name__ == '__main__':
     print('model loaded successfully')
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=steps)
     data_loader = DataLoader('input.txt', batch_size, block_size)
-    for epoch in range(epochs):
+    for step in range(steps):
         start_time = time.time()
         optimizer.zero_grad()
         x, y = data_loader.get_next_batch()
@@ -46,8 +48,9 @@ if __name__ == '__main__':
         loss.backward()
         norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
+        scheduler.step()
         torch.mps.synchronize()
         end_time = time.time()
         tok_per_sec = batch_size * block_size / (end_time - start_time)
         print(
-            f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}, norm: {norm:.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
+            f'step {step}/{steps}, loss: {loss.item():.4f}, norm: {norm:.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
