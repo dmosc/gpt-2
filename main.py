@@ -23,6 +23,7 @@ def get_device():
 
 if __name__ == '__main__':
     torch.manual_seed(42)
+    torch.set_float32_matmul_precision('high')
     device = get_device()
     print(f'running on device: {device}')
     model = GPT(GPTConfig())
