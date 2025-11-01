@@ -34,7 +34,8 @@ if __name__ == '__main__':
     # fails with "Not enough SMs to use max_autotune_gemm mode".
     # model = torch.compile(model)
     print('model loaded successfully')
-    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=learning_rate, betas=(0.9, 0.95), eps=1e-8)
     data_loader = DataLoader('input.txt', batch_size, block_size)
     for epoch in range(epochs):
         start_time = time.time()
@@ -43,9 +44,10 @@ if __name__ == '__main__':
         with torch.autocast(device_type=device, dtype=torch.bfloat16):
             logits, loss = model(x.to(device), y.to(device))
         loss.backward()
+        norm = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         torch.mps.synchronize()
         end_time = time.time()
         tok_per_sec = batch_size * block_size / (end_time - start_time)
         print(
-            f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
+            f'epoch {epoch+1}/{epochs}, loss: {loss.item():.4f}, norm: {norm:.4f}, time: {end_time - start_time:.4f}s, tokens/sec: {tok_per_sec:.2f}')
