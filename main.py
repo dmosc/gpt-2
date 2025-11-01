@@ -26,7 +26,7 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('high')
     device = get_device()
     print(f'running on device: {device}')
-    model = GPT(GPTConfig())
+    model = GPT(GPTConfig(vocab_size=50304))
     model.eval()
     model.to(device)
     # This is a default preference that should always be set to improve training
