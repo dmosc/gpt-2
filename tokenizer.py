@@ -116,6 +116,9 @@ class Tokenizer:
         Optimizes frequency calculation by only updating where merges occur.
         """
         while len(self.vocab) < self.max_vocab_size:
+            if len(self.vocab) % 100 == 0:
+                print(f'Tokenizer: BPE merging... Current vocab size: '
+                        f'{len(self.vocab)}')
             # Compute byte pair frequencies.
             byte_pair_freqs: dict[tuple[bytes, bytes], int] = defaultdict(int)
             for pretoken, freq in pretoken_freqs.items():
