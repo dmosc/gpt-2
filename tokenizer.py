@@ -6,6 +6,8 @@ from pathlib import Path
 import pickle
 from typing import Optional
 
+from perf_utils import time_func
+
 
 class Tokenizer:
     default_chunk_size_bytes = 100_000  # 100 KB
@@ -17,6 +19,7 @@ class Tokenizer:
     vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
     end_of_chunk_split_token = b'<|endoftext|>'
 
+    @time_func
     def load(self, vocab_file_path: Optional[Path] = None) -> None:
         """
         Loads the vocabulary from disk.
@@ -30,6 +33,7 @@ class Tokenizer:
         with open(vocab_file_path, 'rb') as file:
             self.vocab = pickle.load(file)
 
+    @time_func
     def train(self, dataset_path: Path, max_vocab_size: int,
               special_tokens: list[bytes]) -> None:
         """
