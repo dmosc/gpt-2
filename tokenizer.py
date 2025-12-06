@@ -4,15 +4,16 @@ from multiprocessing import Pool
 from collections import defaultdict
 from pathlib import Path
 import pickle
-import random
 
 
 class Tokenizer:
     default_chunk_size_bytes = 100_000  # 100 KB
+    default_parallel_processes = os.cpu_count()
     # OpenAI's Tiktoken pre-tokenizer regex pattern:
     # https://github.com/openai/tiktoken/pull/234/files
     pretokenizer_pattern = r"""'s|'t|'re|'ve|'m|'ll|'d| ?[\\p{L}]+| ?[\\p{N}]+| ?[^\s\\p{L}\\p{N}]+|\s+(?!\S)|\s+"""
     pretokens_path_prefix = Path('/tmp/gpt-2')
+    vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
     end_of_chunk_split_token = b'<|endoftext|>'
 
     def __init__(self, dataset_path: Path, max_vocab_size: int,
@@ -20,13 +21,23 @@ class Tokenizer:
         self.dataset_path = dataset_path
         self.max_vocab_size = max_vocab_size
         self.special_tokens = special_tokens
-        self.vocab: dict[bytes, int] = {}
+        self.vocab: dict[bytes, int] = {bytes([i]): i for i in range(256)}
+        self.vocab.update(
+            {token: 256 + i for i, token in enumerate(special_tokens)})
+        self._reverse_vocab: dict[int, bytes] = {
+            v: k for k, v in self.vocab.items()}
 
     def train(self) -> None:
         chunk_offsets = self._get_dataset_chunk_offsets()
         iterable_args = zip(chunk_offsets[:-1], chunk_offsets[1:])
-        with Pool() as pool:
+        print(f'Tokenizer: Pre-tokenizing {len(chunk_offsets) - 1} chunks '
+              f'using {self.default_parallel_processes} parallel processes...')
+        with Pool(processes=self.default_parallel_processes) as pool:
             pool.starmap(self._pretokenize_file_chunk, iterable_args)
+        print('Tokenizer: Building vocabulary...')
+        self._build_vocab()
+        print('Tokenizer: Cleaning up temporary pretoken files...')
+        self._flush_pretokens()
 
     def _get_dataset_chunk_offsets(self) -> list[int]:
         with open(self.dataset_path, 'rb') as file:
@@ -74,7 +85,76 @@ class Tokenizer:
         # Save pretokens to temporary file
         pretokens_file_path = self.pretokens_path_prefix / \
             f'pretokens_{start_offset}_{end_offset}.pkl'
-        print(f'Saving pretokens to {pretokens_file_path}')
         pretokens_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pretokens_file_path, 'wb') as file:
             pickle.dump(pretokens, file)
+
+    def _build_vocab(self) -> None:
+        """
+        Builds the vocabulary from pretokenized files and performs BPE merging.
+        """
+        # Load pretoken and compute frequencies across all files.
+        pretoken_files = list(
+            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        pretoken_freqs: dict[tuple[bytes], int] = defaultdict(int)
+        for pretokens_file in pretoken_files:
+            with open(pretokens_file, 'rb') as file:
+                for pretoken in pickle.load(file):
+                    pretoken_freqs[tuple(pretoken)] += 1
+
+        # Perform BPE merging to build vocabulary.
+        self._bpe_merge(pretoken_freqs)
+
+        # Save final vocabulary to file.
+        print('Tokenizer: Saving final vocabulary...')
+        with open(self.pretokens_path_prefix / 'vocab.pkl', 'wb') as file:
+            pickle.dump(self.vocab, file)
+
+    def _bpe_merge(self, pretoken_freqs: dict[tuple[bytes], int]) -> None:
+        """
+        Performs BPE merging iteratively until max_vocab_size is reached.
+        Optimizes frequency calculation by only updating where merges occur.
+        """
+        while len(self.vocab) < self.max_vocab_size:
+            # Compute byte pair frequencies.
+            byte_pair_freqs: dict[tuple[bytes, bytes], int] = defaultdict(int)
+            for pretoken, freq in pretoken_freqs.items():
+                for i in range(len(pretoken) - 1):
+                    pair = (pretoken[i], pretoken[i + 1])
+                    byte_pair_freqs[pair] += freq
+
+            # Find most frequent byte pair, merge it and add to vocab.
+            most_frequent_pair = max(
+                byte_pair_freqs.items(), key=lambda item: item[1])[0]
+            new_token = self._reverse_vocab[int(most_frequent_pair[0])] + \
+                self._reverse_vocab[int(most_frequent_pair[1])]
+            new_token_id = len(self.vocab)
+            self.vocab[new_token] = new_token_id
+            self._reverse_vocab[new_token_id] = new_token
+
+            # Merge byte pairs in pretoken frequencies
+            new_pretoken_freqs: dict[tuple[bytes], int] = defaultdict(int)
+            for pretoken, freq in pretoken_freqs.items():
+                merged_pretoken = []
+                i = 0
+                while i < len(pretoken):
+                    if (i < len(pretoken) - 1 and
+                            (pretoken[i], pretoken[i + 1]) == most_frequent_pair):
+                        merged_pretoken.append(new_token_id)
+                        i += 2
+                    else:
+                        merged_pretoken.append(pretoken[i])
+                        i += 1
+                new_pretoken_freqs[tuple(merged_pretoken)] += freq
+            pretoken_freqs = new_pretoken_freqs
+
+        print(f'Tokenizer: Final vocabulary size: {len(self.vocab)}')
+
+    def _flush_pretokens(self) -> None:
+        """
+        Deletes temporary pretoken files to free up space.
+        """
+        pretoken_files = list(
+            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        for pretokens_file in pretoken_files:
+            os.remove(pretokens_file)
