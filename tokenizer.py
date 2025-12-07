@@ -101,8 +101,8 @@ class Tokenizer:
             file.seek(start_offset)
             chunk = file.read(end_offset - start_offset)
             pattern = re.compile(self.pretokenizer_pattern, re.UNICODE)
-            matches = pattern.findall(chunk.decode('utf-8', errors='ignore'))
-            pretokens = [match.encode('utf-8') for match in matches]
+            matches = pattern.finditer(chunk.decode('utf-8', errors='ignore'))
+            pretokens = [match.group().encode('utf-8') for match in matches]
 
         # Save pretokens to temporary file.
         pretokens_file_path = self.pretokens_path_prefix / \
