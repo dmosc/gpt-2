@@ -101,9 +101,8 @@ class Tokenizer:
         with open(dataset_path, 'rb') as file:
             file.seek(start_offset)
             chunk = file.read(end_offset - start_offset)
-            pattern = re.compile(self.pretokenizer_pattern, re.UNICODE)
-            matches = pattern.finditer(chunk.decode('utf-8', errors='ignore'))
-            pretokens = [match.group().encode('utf-8') for match in matches]
+            pretokens = self._pretokenize_sequence(
+                chunk.decode('utf-8', errors='ignore'))
 
         # Save pretokens to temporary file.
         pretokens_file_path = self.pretokens_path_prefix / \
@@ -111,6 +110,20 @@ class Tokenizer:
         pretokens_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pretokens_file_path, 'wb') as file:
             pickle.dump(pretokens, file)
+
+    def _pretokenize_sequence(self, sequence: str) -> list[bytes]:
+        """
+        Pretokenizes a single byte sequence using the pretokenizer regex pattern.
+
+        Args:
+            sequence (str): The string sequence to pretokenize.
+
+        Returns:
+            list[bytes]: List of pretokens.
+        """
+        pattern = re.compile(self.pretokenizer_pattern)
+        matches = pattern.finditer(sequence)
+        return [match.group().encode('utf-8') for match in matches]
 
     def _build_vocab(self, max_vocab_size: int, special_tokens: list[bytes]) -> tuple[dict[bytes, int], list[tuple[bytes, bytes]]]:
         """
@@ -135,7 +148,7 @@ class Tokenizer:
         vocab, reverse_vocab = self._init_vocab(special_tokens)
         # Perform BPE merging to build vocabulary.
         vocab, reverse_vocab, merges = self._bpe_merge(vocab, reverse_vocab,
-                                               pretoken_freqs, max_vocab_size)
+                                                       pretoken_freqs, max_vocab_size)
         return vocab, merges
 
     def _init_vocab(self, special_tokens: list[bytes]) -> tuple[dict[bytes, int], dict[int, bytes]]:
