@@ -126,6 +126,8 @@ class Tokenizer:
         for pretokens_file in pretoken_files:
             with open(pretokens_file, 'rb') as file:
                 for pretoken in pickle.load(file):
+                    if pretoken in special_tokens:
+                        continue
                     pretoken_freqs[tuple(pretoken)] += 1
 
         # Initialize vocabulary and reverse vocabulary.
