@@ -31,7 +31,7 @@ class Tokenizer:
             vocab_file_path = self.vocab_file_path
 
         with open(vocab_file_path, 'rb') as file:
-            self.vocab = pickle.load(file)
+            self.vocab, self.merges = pickle.load(file)
 
     @time_func
     def train(self, dataset_path: Path, max_vocab_size: int,
@@ -54,8 +54,9 @@ class Tokenizer:
             pool.starmap(self._pretokenize_file_chunk, iterable_args)
 
         # Build vocabulary from pretokenized files
-        self.vocab = self._build_vocab(max_vocab_size, special_tokens)
-        self._save_vocab(self.vocab)
+        self.vocab, self.merges = self._build_vocab(max_vocab_size,
+                                                    special_tokens)
+        self._save_vocab(self.vocab, self.merges)
 
         # Clean up temporary pretoken files
         self._flush_pretokens()
@@ -111,7 +112,7 @@ class Tokenizer:
         with open(pretokens_file_path, 'wb') as file:
             pickle.dump(pretokens, file)
 
-    def _build_vocab(self, max_vocab_size: int, special_tokens: list[bytes]) -> dict[bytes, int]:
+    def _build_vocab(self, max_vocab_size: int, special_tokens: list[bytes]) -> tuple[dict[bytes, int], list[tuple[bytes, bytes]]]:
         """
         Builds the vocabulary from pretokenized files and performs BPE merging.
 
@@ -133,10 +134,9 @@ class Tokenizer:
         # Initialize vocabulary and reverse vocabulary.
         vocab, reverse_vocab = self._init_vocab(special_tokens)
         # Perform BPE merging to build vocabulary.
-        vocab, reverse_vocab = self._bpe_merge(vocab, reverse_vocab,
+        vocab, reverse_vocab, merges = self._bpe_merge(vocab, reverse_vocab,
                                                pretoken_freqs, max_vocab_size)
-
-        return vocab
+        return vocab, merges
 
     def _init_vocab(self, special_tokens: list[bytes]) -> tuple[dict[bytes, int], dict[int, bytes]]:
         """
@@ -157,7 +157,7 @@ class Tokenizer:
 
     def _bpe_merge(self, vocab: dict[bytes, int],
                    reverse_vocab: dict[int, bytes],
-                   pretoken_freqs: dict[tuple[bytes], int], max_vocab_size: int) -> tuple[dict[bytes, int], dict[int, bytes]]:
+                   pretoken_freqs: dict[tuple[bytes], int], max_vocab_size: int) -> tuple[dict[bytes, int], dict[int, bytes], list[tuple[bytes, bytes]]]:
         """
         Performs BPE merging iteratively until max_vocab_size is reached.
         Optimizes frequency calculation by only updating where merges occur.
@@ -169,8 +169,9 @@ class Tokenizer:
             max_vocab_size (int): Maximum size of the vocabulary.
 
         Returns:
-            tuple[dict[bytes, int], dict[int, bytes]]: The final vocabulary and reverse vocabulary.
+            tuple[dict[bytes, int], dict[int, bytes], list[tuple[bytes, bytes]]]: The final vocabulary, reverse vocabulary, and list of merges.
         """
+        merges: list[tuple[bytes, bytes]] = []
         while len(vocab) < max_vocab_size:
             if len(vocab) % 100 == 0:
                 print(f'Tokenizer: BPE merging... Current vocab size: '
@@ -190,6 +191,7 @@ class Tokenizer:
             new_token_id = len(vocab)
             vocab[new_token] = new_token_id
             reverse_vocab[new_token_id] = new_token
+            merges.append(most_frequent_pair)
 
             # Merge byte pairs in pretoken frequencies.
             new_pretoken_freqs: dict[tuple[bytes], int] = defaultdict(int)
@@ -208,15 +210,15 @@ class Tokenizer:
             pretoken_freqs = new_pretoken_freqs
 
         print(f'Tokenizer: Final vocabulary size: {len(vocab)}')
-        return vocab, reverse_vocab
+        return vocab, reverse_vocab, merges
 
-    def _save_vocab(self, vocab: dict[bytes, int]) -> None:
+    def _save_vocab(self, vocab: dict[bytes, int], merges: list[tuple[bytes, bytes]]) -> None:
         """
         Saves the vocabulary to disk.
         """
         print('Tokenizer: Saving final vocabulary...')
         with open(self.vocab_file_path, 'wb') as file:
-            pickle.dump(vocab, file)
+            pickle.dump((vocab, merges), file)
 
     def _flush_pretokens(self) -> None:
         """

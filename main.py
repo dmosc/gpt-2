@@ -8,7 +8,7 @@ def main() -> None:
     tokenizer.train(Path('data/TinyStoriesV2-GPT4-valid.txt'),
                     max_vocab_size=500,
                     special_tokens=[b'<|endoftext|>'])
-    print(tokenizer.vocab)
+    print(tokenizer.vocab, tokenizer.merges)
 
 if __name__ == '__main__':
     main()
