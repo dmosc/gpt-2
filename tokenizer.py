@@ -199,12 +199,13 @@ class Tokenizer:
             # Find most frequent byte pair, merge it and add to vocab.
             most_frequent_pair = max(
                 byte_pair_freqs.items(), key=lambda item: item[1])[0]
-            new_token = reverse_vocab[int(most_frequent_pair[0])] + \
-                reverse_vocab[int(most_frequent_pair[1])]
+            token_1 = reverse_vocab[int(most_frequent_pair[0])]
+            token_2 = reverse_vocab[int(most_frequent_pair[1])]
+            new_token = token_1 + token_2
             new_token_id = len(vocab)
             vocab[new_token] = new_token_id
             reverse_vocab[new_token_id] = new_token
-            merges.append(most_frequent_pair)
+            merges.append((token_1, token_2))
 
             # Merge byte pairs in pretoken frequencies.
             new_pretoken_freqs: dict[tuple[bytes], int] = defaultdict(int)
