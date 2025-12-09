@@ -19,6 +19,17 @@ class Tokenizer:
     vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
     end_of_chunk_split_token = b'<|endoftext|>'
 
+    @property
+    def reverse_vocab(self):
+        if hasattr(self, '_reverse_vocab'):
+            return self._reverse_vocab
+        if self.vocab:
+            self._reverse_vocab = {v: k for v, k in enumerate(self.vocab)}
+            return self._reverse_vocab
+        else:
+            raise ValueError(
+                'Tokenizer hasn\'t been initialized. Run .train().')
+
     @time_func
     def load(self, vocab_file_path: Optional[Path] = None) -> None:
         """
@@ -32,6 +43,56 @@ class Tokenizer:
 
         with open(vocab_file_path, 'rb') as file:
             self.vocab, self.merges = pickle.load(file)
+
+    @time_func
+    def encode(self, sequence: str) -> list[int]:
+        """
+        Encodes the input sequence into a list of token IDs using the trained vocabulary.
+
+        Args:
+            sequence (str): The input sequence to encode.
+        Returns:
+            list[int]: List of token IDs.
+        """
+        if not hasattr(self, 'vocab') or not hasattr(self, 'merges'):
+            raise ValueError(
+                'Tokenizer vocabulary not loaded. Call load() first.')
+
+        pretokens = self._pretokenize_sequence(sequence)
+        all_tokens: list[int] = []
+        for pretoken in pretokens:
+            tokens = [self.vocab[bytes([t])] for t in pretoken]
+            for merge in self.merges:
+                idx = 0
+                existing_merge = merge[0] + merge[1]
+                while idx < len(tokens) - 1:
+                    potential_merge = self.reverse_vocab[tokens[idx]
+                                                         ] + self.reverse_vocab[tokens[idx + 1]]
+                    if potential_merge == existing_merge:
+                        tokens[idx] = self.vocab[potential_merge]
+                        del tokens[idx + 1]
+                        idx += 2
+                    else:
+                        idx += 1
+            all_tokens.extend(tokens)
+        return all_tokens
+
+    @time_func
+    def decode(self, tokens: list[int]) -> str:
+        """
+        Decodes a sequence of bytes into a UTF-8 Unicode string by joining
+        tokens from the learned vocabulary.
+
+        Args:
+            tokens (list[int]): The list of tokens to decode.
+
+        Returns:
+            str: String decoded in UTF-8 Unicode format.
+        """
+        sequence_bytes = b''
+        for token in tokens:
+            sequence_bytes += self.reverse_vocab[token]
+        return sequence_bytes.decode('utf-8')
 
     @time_func
     def train(self, dataset_path: Path, max_vocab_size: int,
