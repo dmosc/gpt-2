@@ -21,6 +21,9 @@ class Tokenizer:
 
     @property
     def reverse_vocab(self):
+        """
+        Returns self.vocab with keys and values reversed.
+        """
         if hasattr(self, '_reverse_vocab'):
             return self._reverse_vocab
         if self.vocab:
@@ -123,6 +126,14 @@ class Tokenizer:
         self._flush_pretokens()
 
     def _get_dataset_chunk_offsets(self, dataset_path: Path) -> list[int]:
+        """
+        Find indices to appropriately split a provided dataset file using the
+        end_of_chunk_split_token value to semantically separate documents being
+        ingested from the same dataset_path source.
+
+        Args:
+            dataset_path (Path): Path to the training dataset file.
+        """
         with open(dataset_path, 'rb') as file:
             dataset_size_bytes = os.path.getsize(dataset_path)
             chunk_size_bytes = min(
@@ -157,6 +168,15 @@ class Tokenizer:
 
     def _pretokenize_file_chunk(self, dataset_path: Path, start_offset: int,
                                 end_offset: int) -> None:
+        """
+        Pretokenizes a chunk region from dataset_path delimited by start_offset
+        and end_offset pointers.
+
+        Args:
+            dataset_path (Path): Path to the training dataset file.
+            start_offset (int): Starting index to initialize the file reading.
+            end_offset (int): Final index to finish the file reading.
+        """
         # Read chunk from dataset and pretokenize.
         pretokens: list[bytes] = []
         with open(dataset_path, 'rb') as file:
