@@ -95,7 +95,7 @@ class Tokenizer:
         sequence_bytes = b''
         for token in tokens:
             sequence_bytes += self.reverse_vocab[token]
-        return sequence_bytes.decode('utf-8')
+        return sequence_bytes.decode('utf-8', errors='replace')
 
     @time_func
     def train(self, dataset_path: Path, max_vocab_size: int,
