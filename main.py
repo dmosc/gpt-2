@@ -1,5 +1,8 @@
+import torch
+
 from tokenizer import Tokenizer
 from pathlib import Path
+from modules import FeedForward
 
 
 def main() -> None:
@@ -12,6 +15,8 @@ def main() -> None:
     tokens = tokenizer.encode('could you help me right now?')
     print(tokens)
     print(tokenizer.decode(tokens))
+    ff = FeedForward(5)
+    print(ff.forward(torch.randn(size=(2, 10, 5))))
 
 
 if __name__ == '__main__':
