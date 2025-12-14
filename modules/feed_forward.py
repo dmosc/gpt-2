@@ -2,9 +2,9 @@ import torch
 from modules import linear
 
 class FeedForward(torch.nn.Module):
-    def __init__(self, d_model: int, device=None, dtype=None) -> None:
+    def __init__(self, d_model: int, d_ff: int, device=None,
+                 dtype=None) -> None:
         super().__init__()
-        d_ff = int(8 / 3 * d_model)
         self.linear1 = linear.Linear(d_model, d_ff, device=device, dtype=dtype)
         self.linear2 = linear.Linear(d_model, d_ff, device=device, dtype=dtype)
         self.linear3 = linear.Linear(d_ff, d_model, device=device, dtype=dtype)

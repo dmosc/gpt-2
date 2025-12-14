@@ -16,7 +16,7 @@ def main() -> None:
     tokens = tokenizer.encode('could you help me right now?')
     print(tokens)
     print(tokenizer.decode(tokens))
-    ff = FeedForward(5)
+    ff = FeedForward(5, 10)
     print(ff.forward(torch.randn(size=(2, 10, 5))))
 
     rope = RoPE(theta=10000.0, d_qk=4, max_seq_len=512)
