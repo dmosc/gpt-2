@@ -3,6 +3,7 @@ import torch
 from tokenizer import Tokenizer
 from pathlib import Path
 from modules import FeedForward, RoPE
+from utils import softmax
 
 
 def main() -> None:
@@ -21,6 +22,10 @@ def main() -> None:
     rope = RoPE(theta=10000.0, d_qk=4, max_seq_len=512)
     print(rope.forward(torch.tensor([[[10., 20., 30., 40.]]]),
                        torch.tensor([[1]])))
+    
+    x = torch.randn((3, 3))
+    print(x)
+    print(softmax(x=x, dim=0))
 
 
 if __name__ == '__main__':
