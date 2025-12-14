@@ -1,17 +1,46 @@
 import torch
 
 from utils import softmax
+from modules import linear
 
 
 class CausalSelfAttn(torch.nn.Module):
-    def __init__(self, d_qk: int, d_v: int) -> None:
+    def __init__(self, d_model: int, num_heads: int) -> None:
+        assert d_model % num_heads == 0, f'{d_model=} should be divisible by {num_heads=}'
         super().__init__()
-        self.d_qk = d_qk
-        self.d_v = d_v
+        self.num_heads = num_heads
+        self.d_qk = d_model // num_heads
+        self.d_v = self.d_qk
+        self.w_q = linear.Linear(d_model, self.d_qk * num_heads)
+        self.w_k = linear.Linear(d_model, self.d_qk * num_heads)
+        self.w_v = linear.Linear(d_model, self.d_v * num_heads)
+        self.w_o = linear.Linear(self.d_v * num_heads, d_model)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        *batch_dims, seq_len, d_model = x.shape
+        assert d_model == self.d_qk * self.num_heads, \
+            f'{d_model=} must equal {self.d_qk * self.num_heads}'
+        q = self.w_q(x).reshape(
+            *batch_dims, self.num_heads, seq_len, self.d_qk)
+        k = self.w_k(x).reshape(
+            *batch_dims, self.num_heads, seq_len, self.d_qk)
+        v = self.w_v(x).reshape(*batch_dims, self.num_heads, seq_len, self.d_v)
+        mask = self._causal_mask(seq_len=seq_len)
+        scaled_attn = self._scaled_dot_product_attn(q, k, v, mask)
+        concat_attn = scaled_attn.reshape(*batch_dims, seq_len,
+                                          self.d_v * self.num_heads)
+        return self.w_o(concat_attn)
+
+    def _causal_mask(self, seq_len: int) -> torch.Tensor:
+        # Creates a lower triangular mask where token at index i pays attention
+        # to token at index j if the value is True. The lower triangular shape
+        # makes it so that i can only attend to positions j <= i.
+        return torch.tril(torch.ones(seq_len, seq_len)).bool()
 
     def _scaled_dot_product_attn(self, q: torch.Tensor, k: torch.Tensor,
                                  v: torch.Tensor, mask: torch.Tensor = None) -> torch.Tensor:
-        attn_scores = torch.matmul(Q, K.transpose(-2, -1)) / (self.d_qk ** 0.5)
+        attn_scores = torch.matmul(q, k.transpose(-2, -1)) / (self.d_qk ** 0.5)
         if mask is not None:
-            attn_scores = attn_scores.masked_fill(mask == False, float('-inf'))
-        return torch.matmul(torch.softmax(attn_scores, dim=-1), V)
+            attn_scores = attn_scores.masked_fill(~mask, float('-inf'))
+        attn_weights = softmax(attn_scores, dim=-1)
+        return torch.matmul(attn_weights, v)
