@@ -2,8 +2,9 @@ import torch
 
 from tokenizer import Tokenizer
 from pathlib import Path
-from modules import LanguageModel
 
+from modules import LanguageModel
+from modules.optimizers import SGD, AdamW
 from utils import cross_entropy, perplexity
 
 
@@ -36,6 +37,28 @@ def main() -> None:
     targets = torch.randint(0, vocab_size, logits.shape[:-1])
     loss = cross_entropy(logits, targets)
     print(f'{loss.item()=}, {perplexity(loss).item()=}')
+
+    weights = torch.nn.Parameter(5 * torch.rand((10, 10)))
+    optim = SGD([weights], lr=1)
+    for t in range(100):
+        optim.zero_grad()
+        loss = (weights ** 2).mean()
+        print(loss.cpu().item())
+        loss.backward()
+        optim.step()
+
+    weights_adamw = torch.nn.Parameter(5 * torch.rand((10, 10)))
+    optim_adamw = AdamW([weights_adamw], lr=0.01,
+                        betas=(0.9, 0.999), weight_decay=0.01)
+
+    for t in range(100):
+        optim_adamw.zero_grad()
+        loss = (weights_adamw ** 2).mean()
+        if t % 10 == 0:
+            print(f"Step {t}: loss = {loss.cpu().item():.6f}")
+        loss.backward()
+        optim_adamw.step()
+
 
 if __name__ == '__main__':
     main()
