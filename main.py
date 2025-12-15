@@ -1,10 +1,12 @@
 import torch
+import matplotlib.pyplot as plt
 
 from tokenizer import Tokenizer
 from pathlib import Path
 
 from modules import LanguageModel
 from modules.optimizers import SGD, AdamW
+from modules.schedulers import CosAnnealingScheduler
 from utils import cross_entropy, perplexity
 
 
@@ -58,6 +60,31 @@ def main() -> None:
             print(f"Step {t}: loss = {loss.cpu().item():.6f}")
         loss.backward()
         optim_adamw.step()
+
+    scheduler = CosAnnealingScheduler(
+        max_lr=0.1,        # Maximum learning rate
+        min_lr=0.001,      # Minimum learning rate
+        warmup_steps=20,   # Warm-up for 20 steps
+        max_steps=100      # Total 100 steps
+    )
+    weights = torch.nn.Parameter(torch.rand((10, 10)))
+    optimizer = AdamW([weights], lr=scheduler.max_lr)
+
+    for step in range(120):
+        # Update learning rate
+        lr = scheduler.get_lr(step)
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
+
+        # Training step
+        optimizer.zero_grad()
+        loss = (weights ** 2).mean()
+
+        if step % 20 == 0:
+            print(f"Step {step}: lr = {lr:.6f}, loss = {loss.item():.6f}")
+
+        loss.backward()
+        optimizer.step()
 
 
 if __name__ == '__main__':
