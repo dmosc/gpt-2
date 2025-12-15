@@ -2,8 +2,7 @@ import torch
 
 from tokenizer import Tokenizer
 from pathlib import Path
-from modules import FeedForward, RoPE
-from utils import softmax
+from modules import LanguageModel
 
 
 def main() -> None:
@@ -13,19 +12,23 @@ def main() -> None:
     #                 max_vocab_size=500,
     #                 special_tokens=[b'<|endoftext|>'])
     # print(tokenizer.vocab, tokenizer.merges)
-    tokens = tokenizer.encode('could you help me right now?')
-    print(tokens)
-    print(tokenizer.decode(tokens))
-    ff = FeedForward(5, 10)
-    print(ff.forward(torch.randn(size=(2, 10, 5))))
-
-    rope = RoPE(theta=10000.0, d_qk=4, max_seq_len=512)
-    print(rope.forward(torch.tensor([[[10., 20., 30., 40.]]]),
-                       torch.tensor([[1]])))
-    
-    x = torch.randn((3, 3))
-    print(x)
-    print(softmax(x=x, dim=0))
+    d_model = 128
+    num_heads = 8
+    d_ff = int(8 / 3 * d_model)
+    vocab_size = len(tokenizer.vocab)
+    max_seq_len = 1024
+    num_layers = 4
+    lm = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
+                       num_layers)
+    batch = torch.tensor([
+        tokenizer.encode('what\'s your '),
+        tokenizer.encode('my favorite ice cream is'),
+    ])
+    outputs = lm.generate_next_token(batch).tolist()
+    for idx in range(len(batch)):
+        decoded_seq = tokenizer.decode(batch[idx].tolist())
+        next_word = tokenizer.decode([outputs[idx]])
+        print(f'{decoded_seq} -> {next_word}')
 
 
 if __name__ == '__main__':
