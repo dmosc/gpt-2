@@ -4,6 +4,8 @@ from tokenizer import Tokenizer
 from pathlib import Path
 from modules import LanguageModel
 
+from utils import cross_entropy
+
 
 def main() -> None:
     tokenizer = Tokenizer()
@@ -24,12 +26,16 @@ def main() -> None:
         tokenizer.encode('what\'s your '),
         tokenizer.encode('my favorite ice cream is'),
     ])
-    outputs = lm.generate_next_token(batch).tolist()
+    outputs = lm.generate_next_token(batch)
     for idx in range(len(batch)):
         decoded_seq = tokenizer.decode(batch[idx].tolist())
-        next_word = tokenizer.decode([outputs[idx]])
+        next_word = tokenizer.decode([outputs[idx].item()])
         print(f'{decoded_seq} -> {next_word}')
 
+    logits = lm._compute_logits(batch)
+    targets = torch.randint(0, vocab_size, logits.shape[:-1])
+    loss = cross_entropy(logits, targets).item()
+    print(loss)
 
 if __name__ == '__main__':
     main()
