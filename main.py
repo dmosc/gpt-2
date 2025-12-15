@@ -7,7 +7,7 @@ from pathlib import Path
 from modules import LanguageModel
 from modules.optimizers import SGD, AdamW
 from modules.schedulers import CosAnnealingScheduler
-from utils import cross_entropy, perplexity
+from utils import cross_entropy, perplexity, grad_clip
 
 
 def main() -> None:
@@ -84,6 +84,53 @@ def main() -> None:
             print(f"Step {step}: lr = {lr:.6f}, loss = {loss.item():.6f}")
 
         loss.backward()
+        optimizer.step()
+
+    params = [
+        torch.nn.Parameter(torch.ones(10, 10)),
+        torch.nn.Parameter(torch.ones(5, 5))
+    ]
+
+    # Create artificially large gradients
+    params[0].grad = torch.randn(10, 10) * 100  # Large gradients
+    params[1].grad = torch.randn(5, 5) * 50
+
+    # Check norm before clipping
+    original_norm = torch.sqrt(
+        sum(p.grad.data.norm(2) ** 2 for p in params)
+    ).item()
+    print(f"Original gradient norm: {original_norm:.4f}")
+
+    # Apply gradient clipping
+    max_norm = 1.0
+    returned_norm = grad_clip(params, max_norm=max_norm)
+    print(f"Returned norm (should match original): {returned_norm:.4f}")
+
+    # Check norm after clipping
+    clipped_norm = torch.sqrt(
+        sum(p.grad.data.norm(2) ** 2 for p in params)
+    ).item()
+    print(f"Clipped gradient norm: {clipped_norm:.4f}")
+    print(
+        f"Should be close to max_norm ({max_norm}): {abs(clipped_norm - max_norm) < 1e-5}")
+
+    # Integration with training loop
+    print("\n--- Integration with optimizer ---")
+    model = torch.nn.Linear(10, 10)
+    optimizer = AdamW(model.parameters(), lr=0.01)
+
+    for step in range(5):
+        optimizer.zero_grad()
+
+        # Forward pass
+        x = torch.randn(32, 10)
+        loss = model(x).sum()
+        loss.backward()
+
+        # Gradient clipping before optimizer step
+        grad_norm = grad_clip(model.parameters(), max_norm=1.0)
+        print(f"Step {step}: grad_norm = {grad_norm:.4f}")
+
         optimizer.step()
 
 
