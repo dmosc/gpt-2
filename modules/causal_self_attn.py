@@ -21,8 +21,8 @@ class CausalSelfAttn(torch.nn.Module):
         *batch_dims, seq_len, d_model = x.shape
         assert d_model == self.d_qk * self.num_heads, \
             f'{d_model=} must equal {self.d_qk * self.num_heads}'
-        positions = torch.arange(
-            seq_len, device=x.device, dtype=x.dtype).reshape(1, 1, seq_len)
+        positions = torch.arange(seq_len,
+                                 device=x.device).reshape(1, 1, seq_len)
         q = self.w_q(x).reshape(
             *batch_dims, self.num_heads, seq_len, self.d_qk)
         rotated_q = self.rope(q, positions)
