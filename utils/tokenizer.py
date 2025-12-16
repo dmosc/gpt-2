@@ -6,7 +6,7 @@ from pathlib import Path
 import pickle
 from typing import Optional
 
-from perf_utils import time_func
+from utils.perf_utils import time_func
 
 
 class Tokenizer:
