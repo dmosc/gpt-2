@@ -1,10 +1,9 @@
 import torch
-import matplotlib.pyplot as plt
 
 from pathlib import Path
 
 from modules import LanguageModel
-from modules.optimizers import SGD, AdamW
+from modules.optimizers import AdamW
 from modules.schedulers import CosAnnealingScheduler
 from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader
 
