@@ -48,8 +48,11 @@ def main() -> None:
                 param_group['lr'] = lr
             # Compute gradients, loss and perform a step.
             optimizer.zero_grad()
-            logits = model(batch)
-            loss = cross_entropy(logits[:, -1, :], targets)
+            # Performs model(batch) under the hood but extracts the last column
+            # to get the predictions for each of the sequences and compare
+            # against targets.
+            logits = model.generate_next_token(batch)
+            loss = cross_entropy(logits, targets)
             print(f'{loss.item()=}, {perplexity(loss).item()=}')
             loss.backward()
             optimizer.step()
