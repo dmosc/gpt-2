@@ -1,13 +1,12 @@
 import torch
 import matplotlib.pyplot as plt
 
-from tokenizer import Tokenizer
 from pathlib import Path
 
 from modules import LanguageModel
 from modules.optimizers import SGD, AdamW
 from modules.schedulers import CosAnnealingScheduler
-from utils import cross_entropy, perplexity, grad_clip
+from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader
 
 
 def main() -> None:
@@ -132,6 +131,12 @@ def main() -> None:
         print(f"Step {step}: grad_norm = {grad_norm:.4f}")
 
         optimizer.step()
+
+    dl = DataLoader(tokenizer, Path('data/TinyStoriesV2-GPT4-valid.txt'), 32,
+                    1024)
+    while payload := dl.get_next_batch():
+        batch, targets = payload
+        print(batch.shape, targets.shape)
 
 
 if __name__ == '__main__':
