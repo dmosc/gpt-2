@@ -42,7 +42,7 @@ class AdamW(torch.optim.Optimizer):
                     bias_correction2 = 1 - beta2 ** state['t']
                     alpha = -lr * (bias_correction2 **
                                    0.5) / bias_correction1
-                    param.data.add_(state['m'] / state['v'].sqrt() + eps,
+                    param.data.add_(state['m'] / (state['v'].sqrt() + eps),
                                     alpha=alpha)
                     if weight_decay != 0:
                         param.data.add_(param.data, alpha=-lr * weight_decay)
