@@ -19,6 +19,7 @@ class Checkpointer:
             'optimizer': optimizer.state_dict(),
         }
         torch.save(state, output_path)
+        print(f'Saved checkpoint at step {step} to {output_path}')
 
     def load_checkpoint(self, model: torch.nn.Module,
                         optimizer: torch.optim.Optimizer, step: int) -> int:

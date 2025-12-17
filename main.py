@@ -5,7 +5,7 @@ from pathlib import Path
 from modules import LanguageModel
 from modules.optimizers import AdamW
 from modules.schedulers import CosAnnealingScheduler
-from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader
+from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader, Checkpointer
 
 
 def main() -> None:
@@ -22,14 +22,15 @@ def main() -> None:
     max_seq_len = 1024
     num_layers = 4
     model = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
-                       num_layers)
+                          num_layers)
 
     max_lr = 3e-5
     min_lr = 1e-7
     warmup_steps = 20
     max_steps = 100
     scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
-    optimizer = AdamW(list(model.parameters()), lr=scheduler.max_lr, weight_decay=0.1)
+    optimizer = AdamW(list(model.parameters()),
+                      lr=scheduler.max_lr, weight_decay=0.1)
 
     batch_size = 16
     seq_len = 128
@@ -37,6 +38,8 @@ def main() -> None:
                             Path('data/TinyStoriesV2-GPT4-valid.txt'),
                             batch_size, seq_len)
 
+    save_every_n_steps = 5_000
+    checkpointer = Checkpointer(Path('data/models'))
     epochs = 10
     for epoch in range(epochs):
         step = 0
@@ -60,6 +63,8 @@ def main() -> None:
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
             step += 1
+            if step % save_every_n_steps == 0:
+                checkpointer.save_checkpoint(model, optimizer, step)
 
 
 if __name__ == '__main__':
