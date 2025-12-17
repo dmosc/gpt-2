@@ -13,6 +13,6 @@ class Transformer(torch.nn.Module):
         self.feed_forward = FeedForward(d_model, d_ff)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x += self.causal_self_attn(self.causal_self_attn_prenorm(x))
-        x += self.feed_forward(self.feed_forward_prenorm(x))
+        x = x + self.causal_self_attn(self.causal_self_attn_prenorm(x))
+        x = x + self.feed_forward(self.feed_forward_prenorm(x))
         return x
