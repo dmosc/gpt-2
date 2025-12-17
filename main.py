@@ -24,15 +24,15 @@ def main() -> None:
     model = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
                        num_layers)
 
-    max_lr = 0.1
-    min_lr = 0.001
+    max_lr = 1e-5
+    min_lr = 1e-7
     warmup_steps = 20
     max_steps = 100
     scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
     optimizer = AdamW(list(model.parameters()), lr=scheduler.max_lr)
 
-    batch_size = 32
-    seq_len = 1024
+    batch_size = 8
+    seq_len = 128
     dataloader = DataLoader(tokenizer,
                             Path('data/TinyStoriesV2-GPT4-valid.txt'),
                             batch_size, seq_len)
@@ -48,13 +48,11 @@ def main() -> None:
                 param_group['lr'] = lr
             # Compute gradients, loss and perform a step.
             optimizer.zero_grad()
-            # Performs model(batch) under the hood but extracts the last column
-            # to get the predictions for each of the sequences and compare
-            # against targets.
-            logits = model.generate_next_token(batch)
+            logits = model(batch)[..., -1, :]
             loss = cross_entropy(logits, targets)
             print(f'{loss.item()=}, {perplexity(loss).item()=}')
             loss.backward()
+            grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
             step += 1
 
