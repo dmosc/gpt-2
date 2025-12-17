@@ -16,12 +16,13 @@ class DataLoader:
         self.seq_len = seq_len
 
     def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor]:
-        max_tokens = self.batch_size * self.seq_len + self.batch_size
+        max_tokens = self.batch_size * (self.seq_len + 1)
         tokens = torch.tensor(
             self.tokenizer.encode(next(self.data))[:max_tokens])
         batch = torch.stack([tokens[i: i + self.seq_len]
                             for i in range(self.batch_size)])
-        targets = tokens[self.seq_len: self.seq_len + self.batch_size]
+        targets = torch.stack([tokens[i + 1: i + 1 + self.seq_len]
+                              for i in range(self.batch_size)])
         return batch, targets
 
     def _load_data(self, path: Path) -> Iterator[bytes]:

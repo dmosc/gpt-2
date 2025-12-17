@@ -38,11 +38,15 @@ class AdamW(torch.optim.Optimizer):
                     state['m'] = beta1 * state['m'] + (1 - beta1) * param.grad
                     state['v'] = beta2 * state['v'] + \
                         (1 - beta2) * (param.grad ** 2)
+                    # Apply weight decay first
+                    if weight_decay != 0:
+                        param.data.mul_(1 - lr * weight_decay)
+                    # Bias correction
                     bias_correction1 = 1 - beta1 ** state['t']
                     bias_correction2 = 1 - beta2 ** state['t']
-                    alpha = -lr * (bias_correction2 **
-                                   0.5) / bias_correction1
-                    param.data.add_(state['m'] / (state['v'].sqrt() + eps),
-                                    alpha=alpha)
-                    if weight_decay != 0:
-                        param.data.add_(param.data, alpha=-lr * weight_decay)
+                    # Compute step size
+                    step_size = lr / bias_correction1
+                    bias_corrected_v = state['v'] / bias_correction2
+                    # Update parameters
+                    param.data.add_(state['m'] / (bias_corrected_v.sqrt() + eps),
+                                    alpha=-step_size)

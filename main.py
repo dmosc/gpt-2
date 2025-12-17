@@ -24,14 +24,14 @@ def main() -> None:
     model = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
                        num_layers)
 
-    max_lr = 1e-5
+    max_lr = 3e-5
     min_lr = 1e-7
     warmup_steps = 20
     max_steps = 100
     scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
-    optimizer = AdamW(list(model.parameters()), lr=scheduler.max_lr)
+    optimizer = AdamW(list(model.parameters()), lr=scheduler.max_lr, weight_decay=0.1)
 
-    batch_size = 8
+    batch_size = 16
     seq_len = 128
     dataloader = DataLoader(tokenizer,
                             Path('data/TinyStoriesV2-GPT4-valid.txt'),
@@ -48,7 +48,12 @@ def main() -> None:
                 param_group['lr'] = lr
             # Compute gradients, loss and perform a step.
             optimizer.zero_grad()
-            logits = model(batch)[..., -1, :]
+            logits = model(batch)
+            # Reshape for cross entropy
+            # (batch_size * seq_len, vocab_size)
+            logits = logits.reshape(-1, logits.size(-1))
+            # (batch_size * seq_len,)
+            targets = targets.reshape(-1)
             loss = cross_entropy(logits, targets)
             print(f'{loss.item()=}, {perplexity(loss).item()=}')
             loss.backward()
