@@ -11,12 +11,7 @@ class RMSNorm(torch.nn.Module):
         self.gain = torch.nn.Parameter(torch.ones((d_model,), dtype=dtype))
     
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Upcast tensor to prevent overflow when squaring the input.
-        original_dtype = x.dtype
-        x.to(torch.float32)
-        x.to(self.device)
-        # Return back to original dtype.
-        return (x / self._rms(x) * self.gain).to(original_dtype)
+        return (x / self._rms(x)) * self.gain
     
     def _rms(self, x: torch.Tensor) -> torch.Tensor:
-        return torch.sqrt((torch.sum(x ** 2) + self.eps) / self.d_model)
+        return torch.sqrt(torch.mean(x ** 2, dim=-1, keepdim=True) + self.eps)
