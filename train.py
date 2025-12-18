@@ -1,6 +1,7 @@
 import torch
 
 from pathlib import Path
+from wakepy import keep
 
 from modules import LanguageModel
 from modules.optimizers import AdamW
@@ -9,12 +10,11 @@ from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader, C
 
 
 def main() -> None:
-    torch.autograd.set_detect_anomaly(True)
+    print('Initializing training...')
     tokenizer = Tokenizer()
     tokenizer.load()
-    # tokenizer.train(Path('data/TinyStoriesV2-GPT4-valid.txt'),
-    #                 max_vocab_size=500,
-    #                 special_tokens=[b'<|endoftext|>'])
+
+    # Model config.
     d_model = 128
     num_heads = 8
     d_ff = int(8 / 3 * d_model)
@@ -24,25 +24,29 @@ def main() -> None:
     model = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
                           num_layers)
 
-    max_lr = 3e-5
-    min_lr = 1e-7
+    # Optimizer config.
+    max_lr = 3e-3
+    min_lr = 1e-3
     warmup_steps = 20
     max_steps = 100
     scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
     optimizer = AdamW(list(model.parameters()),
                       lr=scheduler.max_lr, weight_decay=0.1)
 
+    # Hyperparameters.
     batch_size = 16
     seq_len = 128
     dataloader = DataLoader(tokenizer,
                             Path('data/TinyStoriesV2-GPT4-valid.txt'),
                             batch_size, seq_len)
 
-    save_every_n_steps = 5_000
+    save_every_n_steps = 1000
     checkpointer = Checkpointer(Path('data/models'))
     epochs = 10
+
     for epoch in range(epochs):
         step = 0
+        print(f'{epoch=}')
         while data_paylaod := dataloader.get_next_batch():
             batch, targets = data_paylaod
             # Update learning rates following a cosine annealing schedule.
@@ -58,7 +62,8 @@ def main() -> None:
             # (batch_size * seq_len,)
             targets = targets.reshape(-1)
             loss = cross_entropy(logits, targets)
-            print(f'{loss.item()=}, {perplexity(loss).item()=}')
+            if step % 100 == 0:
+                print(f'{step=} {loss.item()=}, {perplexity(loss).item()=}')
             loss.backward()
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
@@ -68,4 +73,5 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    with keep.presenting():
+        main()
