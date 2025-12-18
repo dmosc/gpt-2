@@ -8,7 +8,7 @@ def time_func(func):
         start_time = time.time()
         result = func(*args, **kwargs)
         end_time = time.time()
-        print(
-            f'function {func.__name__!r} executed in {(end_time - start_time):.4f} seconds')
+        # print(
+        #     f'function {func.__name__!r} executed in {(end_time - start_time):.4f} seconds')
         return result
     return wrapper

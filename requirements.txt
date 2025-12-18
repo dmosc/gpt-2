@@ -5,3 +5,4 @@ torch==2.9.0
 matplotlib==3.10.7
 tiktoken==0.12.0
 einops==0.8.1
+wakepy==0.10.2.post1

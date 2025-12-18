@@ -12,13 +12,19 @@ class DataLoader:
                  seq_len: int) -> None:
         self.tokenizer = tokenizer
         self.data = self._load_data(path)
+        self.path = path
         self.batch_size = batch_size
         self.seq_len = seq_len
 
-    def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor]:
+    def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor] | None:
         max_tokens = self.batch_size * (self.seq_len + 1)
-        tokens = torch.tensor(
-            self.tokenizer.encode(next(self.data))[:max_tokens])
+        data = next(iter(self.data), None)
+        if data is None:
+            # Reinitialize the pointer to iterate over all the data again.
+            self.data = self._load_data(self.path)
+            print('Finished processing all data; resetting pointer to start.')
+            return None
+        tokens = torch.tensor(self.tokenizer.encode(data)[:max_tokens])
         batch = torch.stack([tokens[i: i + self.seq_len]
                             for i in range(self.batch_size)])
         targets = torch.stack([tokens[i + 1: i + 1 + self.seq_len]
