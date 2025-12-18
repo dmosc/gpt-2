@@ -26,23 +26,23 @@ def main() -> None:
 
     # Optimizer config.
     max_lr = 3e-3
-    min_lr = 1e-3
-    warmup_steps = 20
-    max_steps = 100
+    min_lr = 2e-3
+    warmup_steps = 100
+    max_steps = 2000
     scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
     optimizer = AdamW(list(model.parameters()),
                       lr=scheduler.max_lr, weight_decay=0.1)
 
     # Hyperparameters.
     batch_size = 16
-    seq_len = 128
+    seq_len = 1024
     dataloader = DataLoader(tokenizer,
-                            Path('data/TinyStoriesV2-GPT4-valid.txt'),
+                            Path('data/TinyStoriesV2-GPT4-train.txt'),
                             batch_size, seq_len)
 
-    save_every_n_steps = 1000
+    save_every_n_steps = 2000
     checkpointer = Checkpointer(Path('data/models'))
-    epochs = 10
+    epochs = 100
 
     for epoch in range(epochs):
         step = 0
