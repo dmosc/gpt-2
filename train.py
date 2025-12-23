@@ -6,7 +6,7 @@ from wakepy import keep
 from modules import LanguageModel
 from modules.optimizers import AdamW
 from modules.schedulers import CosAnnealingScheduler
-from utils import cross_entropy, perplexity, grad_clip, Tokenizer, DataLoader, Checkpointer
+from utils import Evaluator, grad_clip, Tokenizer, DataLoader, Checkpointer
 
 
 def main() -> None:
@@ -44,6 +44,8 @@ def main() -> None:
     checkpointer = Checkpointer(Path('data/models'))
     epochs = 100
 
+    evaluator = Evaluator()
+
     for epoch in range(epochs):
         step = 0
         print(f'{epoch=}')
@@ -61,9 +63,10 @@ def main() -> None:
             logits = logits.reshape(-1, logits.size(-1))
             # (batch_size * seq_len,)
             targets = targets.reshape(-1)
-            loss = cross_entropy(logits, targets)
+            loss = evaluator.cross_entropy(logits, targets)
             if step % 100 == 0:
-                print(f'{step=} {loss.item()=}, {perplexity(loss).item()=}')
+                print(
+                    f'{step=} {loss.item()=}, {evaluator.perplexity(loss).item()=}')
             loss.backward()
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
