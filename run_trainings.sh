@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
-python train_tokenizer.py
-python train_model.py
+python model/train_tokenizer.py
+python model/train_model.py

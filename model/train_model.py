@@ -1,7 +1,5 @@
-import torch
-
-from pathlib import Path
 from wakepy import keep
+from pathlib import Path
 
 from modules import LanguageModel
 from modules.optimizers import AdamW
@@ -9,7 +7,7 @@ from modules.schedulers import CosAnnealingScheduler
 from utils import Evaluator, grad_clip, Tokenizer, DataLoader, Checkpointer
 
 
-def main() -> None:
+def main():
     print('Initializing training...')
     tokenizer = Tokenizer()
     tokenizer.load()
@@ -36,12 +34,12 @@ def main() -> None:
     # Hyperparameters.
     batch_size = 16
     seq_len = 1024
-    dataloader = DataLoader(tokenizer,
-                            Path('data/TinyStoriesV2-GPT4-train.txt'),
-                            batch_size, seq_len)
+    base_dir = Path(__file__).resolve().parent
+    data_path = base_dir / 'data' / 'TinyStoriesV2-GPT4-train.txt'
+    dataloader = DataLoader(tokenizer, data_path, batch_size, seq_len)
 
     save_every_n_steps = 2000
-    checkpointer = Checkpointer(Path('data/models'))
+    checkpointer = Checkpointer(base_dir / 'data' / 'models')
     epochs = 100
 
     evaluator = Evaluator()
@@ -64,7 +62,8 @@ def main() -> None:
             # (batch_size * seq_len,)
             targets = targets.reshape(-1)
             loss = evaluator.evaluate(step, logits, targets)
-            loss.backward()
+            if loss:
+                loss.backward()
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
             step += 1

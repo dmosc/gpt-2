@@ -6,10 +6,10 @@ class Metric:
         self.name = name
         self.values = []
 
-    def update(self, value: float):
+    def update(self, value: torch.Tensor):
         self.values.append(value)
 
-    def get_latest(self) -> float | None:
+    def get_latest(self) -> torch.Tensor | None:
         return self.values[-1] if self.values else None
 
 
@@ -22,13 +22,14 @@ class Evaluator:
         self.leading_indicator = leading_indicator
         self.log_every_n_steps = 100
 
-    def evaluate(self, step: int, logits: torch.Tensor, targets: torch.Tensor):
+    def evaluate(self, step: int, logits: torch.Tensor,
+                 targets: torch.Tensor) -> torch.Tensor | None:
         cross_entropy = self._cross_entropy(logits, targets)
-        perplexity = self._perplexity(cross_entropy.mean()).item()
+        perplexity = self._perplexity(cross_entropy.mean())
         self.metrics['cross_entropy'].update(cross_entropy)
         self.metrics['perplexity'].update(perplexity)
         if step % self.log_every_n_steps == 0:
-            print(f'{step=} {cross_entropy.item()=}, {perplexity=}')
+            print(f'{step=} {cross_entropy.item()=}, {perplexity.item()=}')
         return self._pick_leading_metric().get_latest()
 
     def _cross_entropy(self, logits: torch.Tensor,

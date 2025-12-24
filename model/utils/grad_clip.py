@@ -1,7 +1,10 @@
 import torch
 
+from torch.nn.parameter import Parameter
+from typing import Iterator
 
-def grad_clip(params: torch.nn.ParameterList, max_norm: float,
+
+def grad_clip(params: Iterator[Parameter], max_norm: float,
               eps: float = 1e-6) -> torch.Tensor:
     l2_norm = 0.
     for param in params:
