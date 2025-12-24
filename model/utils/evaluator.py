@@ -33,14 +33,16 @@ class Evaluator:
         return evaluator
 
     def evaluate(self, step: int, logits: torch.Tensor,
-                 targets: torch.Tensor) -> torch.Tensor | None:
+                 targets: torch.Tensor) -> torch.Tensor:
         cross_entropy = self._cross_entropy(logits, targets)
         perplexity = self._perplexity(cross_entropy.mean())
         self.metrics['cross_entropy'].update(cross_entropy)
         self.metrics['perplexity'].update(perplexity)
         if step % self.log_every_n_steps == 0:
             print(f'{step=} {cross_entropy.item()=}, {perplexity.item()=}')
-        return self._pick_leading_metric().get_latest()
+        if latest_measurement := self._pick_leading_metric().get_latest():
+            return latest_measurement
+        raise ValueError('No leading metric measurement available.')
 
     def state_dict(self) -> dict:
         return {
