@@ -25,6 +25,10 @@ class Config:
         self.checkpoint_dir = Path('data/models')
         self.epochs = 10
         self.max_vocab_size = 5000
+        self.lr = 1e-3
+        self.betas = (0.9, 0.999)
+        self.eps = 1e-8
+        self.weight_decay = 0.0
 
     def state_dict(self):
         return self.__dict__

@@ -3,18 +3,18 @@ import math
 
 from collections.abc import Callable
 from typing import Optional
+from ..config import Config
 
 
 class AdamW(torch.optim.Optimizer):
-    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
-                 weight_decay=0.0):
-        assert lr > 0, f'{lr=} must be > 0.'
-        assert 0 <= betas[0] < 1, f'{betas[0]=} must be between 0 and 1.'
-        assert 0 <= betas[1] < 1, f'{betas[1]=} must be between 0 and 1.'
-        assert eps > 0, f'{eps=} must be > 0.'
-        assert weight_decay >= 0, f'{weight_decay=} must be >= 0.'
-        defaults = {'lr': lr, 'betas': betas, 'eps': eps,
-                    'weight_decay': weight_decay}
+    def __init__(self, params, config: Config):
+        assert config.lr > 0, f'{config.lr=} must be > 0.'
+        assert 0 <= config.betas[0] < 1, f'{config.betas[0]=} must be between 0 and 1.'
+        assert 0 <= config.betas[1] < 1, f'{config.betas[1]=} must be between 0 and 1.'
+        assert config.eps > 0, f'{config.eps=} must be > 0.'
+        assert config.weight_decay >= 0, f'{config.weight_decay=} must be >= 0.'
+        defaults = {'lr': config.lr, 'betas': config.betas, 'eps': config.eps,
+                    'weight_decay': config.weight_decay}
         super().__init__(params, defaults)
 
     def step(self, closure: Optional[Callable] = None):

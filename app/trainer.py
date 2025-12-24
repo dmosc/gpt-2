@@ -14,12 +14,8 @@ class Trainer:
     def train_model(self):
         print('Training model...')
         model = LanguageModel(self.config)
-        scheduler = CosAnnealingScheduler(self.config.max_lr,
-                                          self.config.min_lr,
-                                          self.config.warmup_steps,
-                                          self.config.max_steps)
-        optimizer = AdamW(list(model.parameters()), lr=scheduler.max_lr,
-                          weight_decay=self.config.weight_decay)
+        scheduler = CosAnnealingScheduler(self.config)
+        optimizer = AdamW(list(model.parameters()), self.config)
         base_dir = self.base_dir
         dataloader = DataLoader(self.config.tokenizer,
                                 base_dir / self.config.data_path,
