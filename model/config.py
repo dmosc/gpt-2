@@ -12,8 +12,8 @@ class Config:
         self.vocab_size = len(self.tokenizer.vocab)
         self.max_seq_len = 1024
         self.num_layers = 4
-        self.max_lr = 3e-3
-        self.min_lr = 2e-3
+        self.max_lr = 3e-2
+        self.min_lr = 3e-3
         self.warmup_steps = 100
         self.max_steps = 2000
         self.weight_decay = 0.1
@@ -23,7 +23,8 @@ class Config:
         self.data_path = Path('data/TinyStoriesV2-GPT4-train.txt')
         self.valid_data_path = Path('data/TinyStoriesV2-GPT4-valid.txt')
         self.checkpoint_dir = Path('data/models')
-        self.epochs = 100
+        self.epochs = 10
+        self.max_vocab_size = 5000
 
     def state_dict(self):
         return self.__dict__
