@@ -46,4 +46,5 @@ def train_model():
             optimizer.step()
             step += 1
             if step % config.save_every_n_steps == 0:
-                checkpointer.save_checkpoint(model, optimizer, evaluator, step)
+                checkpointer.save_checkpoint(step, model, optimizer, evaluator,
+                                             config)

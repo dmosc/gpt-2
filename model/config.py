@@ -24,3 +24,9 @@ class Config:
         self.valid_data_path = Path('data/TinyStoriesV2-GPT4-valid.txt')
         self.checkpoint_dir = Path('data/models')
         self.epochs = 100
+
+    def state_dict(self):
+        return self.__dict__
+
+    def load_state_dict(self, state_dict):
+        self.__dict__.update(state_dict)
