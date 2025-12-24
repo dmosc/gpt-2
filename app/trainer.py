@@ -17,7 +17,7 @@ class Trainer:
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
         dataloader = DataLoader(self.config)
-        checkpointer = Checkpointer(self.config.checkpoint_dir)
+        checkpointer = Checkpointer(self.config)
         evaluator = Evaluator()
 
         for epoch in range(self.config.epochs):
@@ -48,5 +48,5 @@ class Trainer:
 
     def train_tokenizer(self):
         self.config.tokenizer.train(self.config.valid_data_path,
-                        self.config.max_vocab_size,
-                        [b'<|endoftext|>'])
+                                    self.config.max_vocab_size,
+                                    [b'<|endoftext|>'])
