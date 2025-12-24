@@ -1,9 +1,8 @@
 from pathlib import Path
-from .utils.tokenizer import Tokenizer
 
 
 class Config:
-    def __init__(self):
+    def __init__(self, data_dir: Path):
         self.d_model = 128
         self.num_heads = 8
         self.d_ff = int(8 / 3 * self.d_model)
@@ -17,10 +16,9 @@ class Config:
         self.batch_size = 16
         self.seq_len = 1024
         self.save_every_n_steps = 2000
-        self.base_dir = Path(__file__).resolve().parent.parent.parent
-        self.data_path = self.base_dir / 'data/TinyStoriesV2-GPT4-train.txt'
-        self.valid_data_path = self.base_dir / 'data/TinyStoriesV2-GPT4-valid.txt'
-        self.checkpoint_dir = self.base_dir / 'data/models'
+        self.data_path = data_dir / 'TinyStoriesV2-GPT4-train.txt'
+        self.valid_data_path = data_dir / 'TinyStoriesV2-GPT4-valid.txt'
+        self.checkpoint_dir = data_dir / 'models'
         self.state_file = Path('state.pkl')
         self.epochs = 10
         self.max_vocab_size = 5000
