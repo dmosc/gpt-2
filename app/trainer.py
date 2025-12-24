@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from model.modules import LanguageModel, Config
 from model.modules.optimizers import AdamW
 from model.modules.schedulers import CosAnnealingScheduler
