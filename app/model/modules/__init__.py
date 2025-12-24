@@ -6,3 +6,4 @@ from .rope import *
 from .causal_self_attn import *
 from .transformer import *
 from .language_model import *
+from .config import *

@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from model.modules import LanguageModel
+from model.modules import LanguageModel, Config
 from model.modules.optimizers import AdamW
 from model.modules.schedulers import CosAnnealingScheduler
 from model.modules.utils import Evaluator, grad_clip, DataLoader, Checkpointer, Tokenizer
-from config import Config
 
 
 class Trainer:
