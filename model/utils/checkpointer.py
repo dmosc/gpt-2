@@ -24,7 +24,8 @@ class Checkpointer:
         print(f'Saved checkpoint at step {step} to {output_path}')
 
     def load_checkpoint(self, model: torch.nn.Module,
-                        optimizer: torch.optim.Optimizer, step: int) -> int:
+                        optimizer: torch.optim.Optimizer, evaluator: Evaluator,
+                        step: int) -> int:
         checkpoint_path = self._get_checkpoint_path(step) / self.state_file
         if not checkpoint_path.exists():
             raise FileNotFoundError(
@@ -32,6 +33,8 @@ class Checkpointer:
         state = torch.load(checkpoint_path)
         model.load_state_dict(state['model'])
         optimizer.load_state_dict(state['optimizer'])
+        evaluator.load_state_dict(state['evaluator'])
+        print(f'Loaded checkpoint {checkpoint_path}')
         return state['step']
 
     def _get_checkpoint_path(self, step: int) -> Path:

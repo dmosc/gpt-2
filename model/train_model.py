@@ -5,46 +5,26 @@ from modules import LanguageModel
 from modules.optimizers import AdamW
 from modules.schedulers import CosAnnealingScheduler
 from utils import Evaluator, grad_clip, Tokenizer, DataLoader, Checkpointer
+from config import Config
 
 
 def main():
     print('Initializing training...')
-    tokenizer = Tokenizer()
-    tokenizer.load()
-
-    # Model config.
-    d_model = 128
-    num_heads = 8
-    d_ff = int(8 / 3 * d_model)
-    vocab_size = len(tokenizer.vocab)
-    max_seq_len = 1024
-    num_layers = 4
-    model = LanguageModel(d_model, num_heads, d_ff, vocab_size, max_seq_len,
-                          num_layers)
-
-    # Optimizer config.
-    max_lr = 3e-3
-    min_lr = 2e-3
-    warmup_steps = 100
-    max_steps = 2000
-    scheduler = CosAnnealingScheduler(max_lr, min_lr, warmup_steps, max_steps)
+    config = Config()
+    model = LanguageModel(config.d_model, config.num_heads, config.d_ff,
+                          config.vocab_size, config.max_seq_len,
+                          config.num_layers)
+    scheduler = CosAnnealingScheduler(config.max_lr, config.min_lr,
+                                      config.warmup_steps, config.max_steps)
     optimizer = AdamW(list(model.parameters()),
-                      lr=scheduler.max_lr, weight_decay=0.1)
-
-    # Hyperparameters.
-    batch_size = 16
-    seq_len = 1024
+                      lr=scheduler.max_lr, weight_decay=config.weight_decay)
     base_dir = Path(__file__).resolve().parent
-    data_path = base_dir / 'data' / 'TinyStoriesV2-GPT4-train.txt'
-    dataloader = DataLoader(tokenizer, data_path, batch_size, seq_len)
-
-    save_every_n_steps = 2000
-    checkpointer = Checkpointer(base_dir / 'data' / 'models')
-    epochs = 100
-
+    dataloader = DataLoader(config.tokenizer, base_dir / config.data_path,
+                            config.batch_size, config.seq_len)
+    checkpointer = Checkpointer(base_dir / config.checkpoint_dir)
     evaluator = Evaluator()
 
-    for epoch in range(epochs):
+    for epoch in range(config.epochs):
         step = 0
         print(f'{epoch=}')
         while data_paylaod := dataloader.get_next_batch():
@@ -62,12 +42,11 @@ def main():
             # (batch_size * seq_len,)
             targets = targets.reshape(-1)
             loss = evaluator.evaluate(step, logits, targets)
-            if loss:
-                loss.backward()
+            loss.backward()
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
             step += 1
-            if step % save_every_n_steps == 0:
+            if step % config.save_every_n_steps == 0:
                 checkpointer.save_checkpoint(model, optimizer, evaluator, step)
 
 
