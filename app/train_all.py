@@ -1,6 +1,6 @@
 from wakepy import keep
 from trainer import Trainer
-from model.modules import Config
+from model.modules.config import Config
 
 
 if __name__ == '__main__':

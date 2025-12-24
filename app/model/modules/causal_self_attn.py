@@ -1,6 +1,6 @@
 import torch
 
-from .utils import softmax
+from .utils.softmax import softmax
 from .linear import Linear
 from .rope import RoPE
 

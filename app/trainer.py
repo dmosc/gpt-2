@@ -1,7 +1,11 @@
-from model.modules import LanguageModel, Config
-from model.modules.optimizers import AdamW
-from model.modules.schedulers import CosAnnealingScheduler
-from model.modules.utils import Evaluator, grad_clip, DataLoader, Checkpointer, Tokenizer
+from model.modules.language_model import LanguageModel
+from model.modules.config import Config
+from model.modules.optimizers.adamw import AdamW
+from model.modules.schedulers.cos_annealing import CosAnnealingScheduler
+from model.modules.utils.evaluator import Evaluator
+from model.modules.utils.grad_clip import grad_clip
+from model.modules.utils.dataloader import DataLoader
+from model.modules.utils.checkpointer import Checkpointer
 
 
 class Trainer:
@@ -15,7 +19,6 @@ class Trainer:
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
         dataloader = DataLoader(self.config)
-        checkpointer = Checkpointer(self.config)
         evaluator = Evaluator()
 
         for epoch in range(self.config.epochs):
@@ -41,7 +44,7 @@ class Trainer:
                 optimizer.step()
                 step += 1
                 if step % self.config.save_every_n_steps == 0:
-                    checkpointer.save_checkpoint(step, model, optimizer,
+                    Checkpointer.save_checkpoint(step, model, optimizer,
                                                  evaluator, self.config)
 
     def train_tokenizer(self):

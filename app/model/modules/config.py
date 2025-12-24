@@ -1,5 +1,5 @@
 from pathlib import Path
-from model.modules.utils import Tokenizer
+from .utils.tokenizer import Tokenizer
 
 
 class Config:
@@ -24,6 +24,7 @@ class Config:
         self.data_path = self.base_dir / 'data/TinyStoriesV2-GPT4-train.txt'
         self.valid_data_path = self.base_dir / 'data/TinyStoriesV2-GPT4-valid.txt'
         self.checkpoint_dir = self.base_dir / 'data/models'
+        self.state_file = Path('state.pkl')
         self.epochs = 10
         self.max_vocab_size = 5000
         self.lr = 1e-3
@@ -36,3 +37,8 @@ class Config:
 
     def load_state_dict(self, state_dict):
         self.__dict__.update(state_dict)
+
+    def get_checkpoint_path(self, step: int) -> Path:
+        path = self.checkpoint_dir / str(step) / self.state_file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
