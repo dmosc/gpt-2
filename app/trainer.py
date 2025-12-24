@@ -13,9 +13,7 @@ class Trainer:
 
     def train_model(self):
         print('Training model...')
-        model = LanguageModel(self.config.d_model, self.config.num_heads,
-                              self.config.d_ff, self.config.vocab_size,
-                              self.config.max_seq_len, self.config.num_layers)
+        model = LanguageModel(self.config)
         scheduler = CosAnnealingScheduler(self.config.max_lr,
                                           self.config.min_lr,
                                           self.config.warmup_steps,
