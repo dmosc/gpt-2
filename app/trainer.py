@@ -12,6 +12,7 @@ class Trainer:
 
     def train_model(self):
         print('Training model...')
+        self.config.tokenizer.load()
         model = LanguageModel(self.config)
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
@@ -46,7 +47,6 @@ class Trainer:
                                                  evaluator, self.config)
 
     def train_tokenizer(self):
-        tokenizer = Tokenizer()
-        tokenizer.train(self.config.valid_data_path,
+        self.config.tokenizer.train(self.config.valid_data_path,
                         self.config.max_vocab_size,
                         [b'<|endoftext|>'])
