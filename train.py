@@ -63,10 +63,7 @@ def main() -> None:
             logits = logits.reshape(-1, logits.size(-1))
             # (batch_size * seq_len,)
             targets = targets.reshape(-1)
-            loss = evaluator.cross_entropy(logits, targets)
-            if step % 100 == 0:
-                print(
-                    f'{step=} {loss.item()=}, {evaluator.perplexity(loss).item()=}')
+            loss = evaluator.evaluate(step, logits, targets)
             loss.backward()
             grad_clip(model.parameters(), max_norm=0.1)
             optimizer.step()
