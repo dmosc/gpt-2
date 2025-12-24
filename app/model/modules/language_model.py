@@ -25,7 +25,7 @@ class LanguageModel(torch.nn.Module):
         return logits[..., -1, :].argmax(dim=-1)
 
     def _init_layers(self, config: Config) -> torch.nn.Sequential:
-        layers = torch.nn.Sequential(Embedding(config.max_vocab_size,
+        layers = torch.nn.Sequential(Embedding(config.vocab_size,
                                                config.d_model))
         for _ in range(config.num_layers):
             layers.append(Transformer(config.d_model,
@@ -33,5 +33,5 @@ class LanguageModel(torch.nn.Module):
                                       config.d_ff,
                                       config.max_seq_len))
         layers.append(RMSNorm(config.d_model))
-        layers.append(Linear(config.d_model, config.max_vocab_size))
+        layers.append(Linear(config.d_model, config.vocab_size))
         return layers
