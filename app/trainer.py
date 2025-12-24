@@ -6,6 +6,7 @@ from model.modules.utils.evaluator import Evaluator
 from model.modules.utils.grad_clip import grad_clip
 from model.modules.utils.dataloader import DataLoader
 from model.modules.utils.checkpointer import Checkpointer
+from model.modules.utils.tokenizer import Tokenizer
 
 
 class Trainer:
@@ -14,11 +15,12 @@ class Trainer:
 
     def train_model(self):
         print('Training model...')
-        self.config.tokenizer.load()
+        tokenizer = Tokenizer()
+        tokenizer.load()
         model = LanguageModel(self.config)
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
-        dataloader = DataLoader(self.config)
+        dataloader = DataLoader(self.config, tokenizer)
         evaluator = Evaluator()
 
         for epoch in range(self.config.epochs):
@@ -48,6 +50,7 @@ class Trainer:
                                                  evaluator, self.config)
 
     def train_tokenizer(self):
-        self.config.tokenizer.train(self.config.valid_data_path,
+        tokenizer = Tokenizer()
+        tokenizer.train(self.config.valid_data_path,
                                     self.config.max_vocab_size,
                                     [b'<|endoftext|>'])

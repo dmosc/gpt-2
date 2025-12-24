@@ -1,4 +1,5 @@
 import torch
+
 from pathlib import Path
 from .evaluator import Evaluator
 
@@ -30,7 +31,8 @@ class Checkpointer:
         if not path.exists():
             raise FileNotFoundError(
                 f'Checkpoint at path={path} doesn\'t exist.')
-        state = torch.load(path)
+        torch.serialization.add_safe_globals([Path])
+        state = torch.load(path, weights_only=False)
         config = Config()
         config.load_state_dict(state['config'])
         model = LanguageModel(config)

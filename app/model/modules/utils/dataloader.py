@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Iterator
 
 from ..config import Config
+from ..utils.tokenizer import Tokenizer
 
 
 class DataLoader:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, tokenizer: Tokenizer) -> None:
         self.config = config
+        self.tokenizer = tokenizer
         self.data = self._load_data(self.config.data_path)
 
     def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor] | None:
@@ -20,7 +22,7 @@ class DataLoader:
             self.data = self._load_data(self.config.data_path)
             print('Finished processing all data; resetting pointer to start.')
             return None
-        tokens = torch.tensor(self.config.tokenizer.encode(data)[:max_tokens])
+        tokens = torch.tensor(self.tokenizer.encode(data)[:max_tokens])
         batch = torch.stack([tokens[i: i + self.config.seq_len]
                             for i in range(self.config.batch_size)])
         targets = torch.stack([tokens[i + 1: i + 1 + self.config.seq_len]

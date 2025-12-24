@@ -4,12 +4,9 @@ from .utils.tokenizer import Tokenizer
 
 class Config:
     def __init__(self):
-        self.tokenizer = Tokenizer()
-        self.tokenizer.load()
         self.d_model = 128
         self.num_heads = 8
         self.d_ff = int(8 / 3 * self.d_model)
-        self.vocab_size = len(self.tokenizer.vocab)
         self.max_seq_len = 1024
         self.num_layers = 4
         self.max_lr = 3e-2
