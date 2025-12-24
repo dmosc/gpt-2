@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Iterator
 
 from .tokenizer import Tokenizer
+from ..config import Config
 
 
 class DataLoader:

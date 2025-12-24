@@ -9,18 +9,16 @@ from model.modules.utils import Evaluator, grad_clip, DataLoader, Checkpointer, 
 class Trainer:
     def __init__(self, config: Config):
         self.config = config
-        self.base_dir = Path(__file__).resolve().parent
 
     def train_model(self):
         print('Training model...')
         model = LanguageModel(self.config)
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
-        base_dir = self.base_dir
         dataloader = DataLoader(self.config.tokenizer,
-                                base_dir / self.config.data_path,
+                                self.config.data_path,
                                 self.config.batch_size, self.config.seq_len)
-        checkpointer = Checkpointer(base_dir / self.config.checkpoint_dir)
+        checkpointer = Checkpointer(self.config.checkpoint_dir)
         evaluator = Evaluator()
 
         for epoch in range(self.config.epochs):
@@ -51,6 +49,6 @@ class Trainer:
 
     def train_tokenizer(self):
         tokenizer = Tokenizer()
-        tokenizer.train(self.base_dir / self.config.valid_data_path,
+        tokenizer.train(self.config.valid_data_path,
                         self.config.max_vocab_size,
                         [b'<|endoftext|>'])
