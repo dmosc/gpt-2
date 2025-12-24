@@ -1,6 +1,6 @@
 import torch
 from pathlib import Path
-from utils import Evaluator
+from .evaluator import Evaluator
 
 
 class Checkpointer:

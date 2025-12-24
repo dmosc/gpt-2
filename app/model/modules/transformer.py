@@ -1,6 +1,8 @@
 import torch
 
-from modules import RMSNorm, CausalSelfAttn, FeedForward
+from .rmsnorm import RMSNorm
+from .causal_self_attn import CausalSelfAttn
+from .feed_forward import FeedForward
 
 
 class Transformer(torch.nn.Module):

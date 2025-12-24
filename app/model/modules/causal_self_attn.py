@@ -1,7 +1,8 @@
 import torch
 
-from utils import softmax
-from modules import Linear, RoPE
+from .utils import softmax
+from .linear import Linear
+from .rope import RoPE
 
 
 class CausalSelfAttn(torch.nn.Module):

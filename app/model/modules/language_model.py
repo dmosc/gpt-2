@@ -1,7 +1,9 @@
 import torch
 
-from modules import Embedding, Transformer, RMSNorm, Linear
-from utils import softmax
+from .embedding import Embedding
+from .transformer import Transformer
+from .rmsnorm import RMSNorm
+from .linear import Linear
 
 
 class LanguageModel(torch.nn.Module):

@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from modules import LanguageModel
-from modules.optimizers import AdamW
-from modules.schedulers import CosAnnealingScheduler
-from utils import Evaluator, grad_clip, DataLoader, Checkpointer
+from model.modules import LanguageModel
+from model.modules.optimizers import AdamW
+from model.modules.schedulers import CosAnnealingScheduler
+from model.modules.utils import Evaluator, grad_clip, DataLoader, Checkpointer
 from config import Config
 
 

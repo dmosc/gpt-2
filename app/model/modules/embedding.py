@@ -10,6 +10,6 @@ class Embedding(torch.nn.Module):
                                                  a=-3, b=3)
         self.embeddings = torch.nn.Parameter(embeddings)
         self.device = device
-    
+
     def forward(self, tokens: torch.Tensor) -> torch.Tensor:
         return self.embeddings[tokens]

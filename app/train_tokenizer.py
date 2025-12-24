@@ -1,5 +1,5 @@
 from pathlib import Path
-from utils import Tokenizer
+from model.modules.utils import Tokenizer
 from config import Config
 
 
