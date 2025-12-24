@@ -15,7 +15,7 @@ class Config:
         self.weight_decay = 0.1
         self.batch_size = 16
         self.seq_len = 1024
-        self.save_every_n_steps = 2000
+        self.save_every_n_steps = 100
         self.train_data_path = data_dir / 'TinyStoriesV2-GPT4-train.txt'
         self.valid_data_path = data_dir / 'TinyStoriesV2-GPT4-valid.txt'
         self.checkpoint_dir = data_dir / 'models'
