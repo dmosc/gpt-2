@@ -26,6 +26,7 @@ class Config:
         self.betas = (0.9, 0.999)
         self.eps = 1e-8
         self.weight_decay = 0.0
+        self.special_tokens = [b'<|endoftext|>']
 
     def state_dict(self):
         return self.__dict__

@@ -51,6 +51,5 @@ class Trainer:
 
     def train_tokenizer(self):
         tokenizer = Tokenizer()
-        tokenizer.train(self.config.valid_data_path,
-                                    self.config.vocab_size,
-                                    [b'<|endoftext|>'])
+        tokenizer.train(self.config.valid_data_path, self.config.vocab_size,
+                        self.config.special_tokens)
