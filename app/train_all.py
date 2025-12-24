@@ -1,3 +1,4 @@
+import torch
 import argparse
 
 from pathlib import Path
@@ -7,6 +8,11 @@ from model.modules.config import Config
 
 
 if __name__ == '__main__':
+    if torch.backends.mps.is_available():
+        torch.set_default_device('mps')
+        print("Using MPS device for training.")
+    else:
+        print("MPS device not available. Using default device.")
     parser = argparse.ArgumentParser(prog='train_all.py',
                                      description='Train tokenizer and model sequentially.',
                                      epilog='Example usage: python app/train_all.py --skip_tokenizer_training')
