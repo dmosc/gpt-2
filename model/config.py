@@ -21,5 +21,6 @@ class Config:
         self.seq_len = 1024
         self.save_every_n_steps = 2000
         self.data_path = Path('data/TinyStoriesV2-GPT4-train.txt')
+        self.valid_data_path = Path('data/TinyStoriesV2-GPT4-valid.txt')
         self.checkpoint_dir = Path('data/models')
         self.epochs = 100

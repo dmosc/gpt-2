@@ -1,15 +1,14 @@
-from wakepy import keep
 from pathlib import Path
 
 from modules import LanguageModel
 from modules.optimizers import AdamW
 from modules.schedulers import CosAnnealingScheduler
-from utils import Evaluator, grad_clip, Tokenizer, DataLoader, Checkpointer
+from utils import Evaluator, grad_clip, DataLoader, Checkpointer
 from config import Config
 
 
-def main():
-    print('Initializing training...')
+def train_model():
+    print('Training model...')
     config = Config()
     model = LanguageModel(config.d_model, config.num_heads, config.d_ff,
                           config.vocab_size, config.max_seq_len,
@@ -48,8 +47,3 @@ def main():
             step += 1
             if step % config.save_every_n_steps == 0:
                 checkpointer.save_checkpoint(model, optimizer, evaluator, step)
-
-
-if __name__ == '__main__':
-    with keep.presenting():
-        main()

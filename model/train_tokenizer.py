@@ -1,8 +1,11 @@
 from pathlib import Path
 from utils import Tokenizer
+from config import Config
 
 
-if __name__ == '__main__':
+def train_tokenizer():
+    print('Training tokenizer...')
+    config = Config()
+    base_dir = Path(__file__).resolve().parent
     tokenizer = Tokenizer()
-    tokenizer.train(Path('./data/TinyStoriesV2-GPT4-valid.txt'),
-                    500, [b'<|endoftext|>'])
+    tokenizer.train(base_dir / config.valid_data_path, 500, [b'<|endoftext|>'])
