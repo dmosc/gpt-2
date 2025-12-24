@@ -4,7 +4,7 @@ import torch
 class Metric:
     def __init__(self, name: str):
         self.name = name
-        self.values = []
+        self.values: list[torch.Tensor] = []
 
     def update(self, value: torch.Tensor):
         self.values.append(value)
@@ -22,6 +22,16 @@ class Evaluator:
         self.leading_indicator = leading_indicator
         self.log_every_n_steps = 100
 
+    @classmethod
+    def load_state_dict(cls, state: dict) -> 'Evaluator':
+        evaluator = cls(leading_indicator=state.get('leading_indicator',
+                                                    'cross_entropy'))
+        evaluator.log_every_n_steps = state.get('log_every_n_steps',
+                                                evaluator.log_every_n_steps)
+        for name, values in state.get('metrics', {}).items():
+            evaluator.metrics[name].values = [torch.tensor(v) for v in values]
+        return evaluator
+
     def evaluate(self, step: int, logits: torch.Tensor,
                  targets: torch.Tensor) -> torch.Tensor | None:
         cross_entropy = self._cross_entropy(logits, targets)
@@ -31,6 +41,16 @@ class Evaluator:
         if step % self.log_every_n_steps == 0:
             print(f'{step=} {cross_entropy.item()=}, {perplexity.item()=}')
         return self._pick_leading_metric().get_latest()
+
+    def state_dict(self) -> dict:
+        return {
+            'leading_indicator': self.leading_indicator,
+            'log_every_n_steps': self.log_every_n_steps,
+            'metrics': {
+                name: [v.item() for v in metric.values]
+                for name, metric in self.metrics.items()
+            }
+        }
 
     def _cross_entropy(self, logits: torch.Tensor,
                        targets: torch.Tensor) -> torch.Tensor:

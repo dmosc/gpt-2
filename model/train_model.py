@@ -68,7 +68,7 @@ def main():
             optimizer.step()
             step += 1
             if step % save_every_n_steps == 0:
-                checkpointer.save_checkpoint(model, optimizer, step)
+                checkpointer.save_checkpoint(model, optimizer, evaluator, step)
 
 
 if __name__ == '__main__':

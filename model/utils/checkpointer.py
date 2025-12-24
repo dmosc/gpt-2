@@ -1,6 +1,6 @@
-import os
 import torch
 from pathlib import Path
+from utils import Evaluator
 
 
 class Checkpointer:
@@ -9,7 +9,8 @@ class Checkpointer:
         self.state_file = 'state.pkl'
 
     def save_checkpoint(self, model: torch.nn.Module,
-                        optimizer: torch.optim.Optimizer, step: int):
+                        optimizer: torch.optim.Optimizer, evaluator: Evaluator,
+                        step: int):
         output_path = self._get_checkpoint_path(step) / self.state_file
         if output_path.exists():
             print(f'{output_path} already exists; overwriting it...')
@@ -17,6 +18,7 @@ class Checkpointer:
             'step': step,
             'model': model.state_dict(),
             'optimizer': optimizer.state_dict(),
+            'evaluator': evaluator.state_dict(),
         }
         torch.save(state, output_path)
         print(f'Saved checkpoint at step {step} to {output_path}')
