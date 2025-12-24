@@ -15,9 +15,7 @@ class Trainer:
         model = LanguageModel(self.config)
         scheduler = CosAnnealingScheduler(self.config)
         optimizer = AdamW(list(model.parameters()), self.config)
-        dataloader = DataLoader(self.config.tokenizer,
-                                self.config.data_path,
-                                self.config.batch_size, self.config.seq_len)
+        dataloader = DataLoader(self.config)
         checkpointer = Checkpointer(self.config.checkpoint_dir)
         evaluator = Evaluator()
 

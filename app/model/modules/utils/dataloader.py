@@ -4,40 +4,35 @@ import torch
 from pathlib import Path
 from typing import Iterator
 
-from .tokenizer import Tokenizer
 from ..config import Config
 
 
 class DataLoader:
-    def __init__(self, tokenizer: Tokenizer, path: Path, batch_size: int,
-                 seq_len: int) -> None:
-        self.tokenizer = tokenizer
-        self.data = self._load_data(path)
-        self.path = path
-        self.batch_size = batch_size
-        self.seq_len = seq_len
+    def __init__(self, config: Config) -> None:
+        self.config = config
+        self.data = self._load_data(self.config.data_path)
 
     def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor] | None:
-        max_tokens = self.batch_size * (self.seq_len + 1)
+        max_tokens = self.config.batch_size * (self.config.seq_len + 1)
         data = next(iter(self.data), None)
         if data is None:
             # Reinitialize the pointer to iterate over all the data again.
-            self.data = self._load_data(self.path)
+            self.data = self._load_data(self.config.data_path)
             print('Finished processing all data; resetting pointer to start.')
             return None
-        tokens = torch.tensor(self.tokenizer.encode(data)[:max_tokens])
-        batch = torch.stack([tokens[i: i + self.seq_len]
-                            for i in range(self.batch_size)])
-        targets = torch.stack([tokens[i + 1: i + 1 + self.seq_len]
-                              for i in range(self.batch_size)])
+        tokens = torch.tensor(self.config.tokenizer.encode(data)[:max_tokens])
+        batch = torch.stack([tokens[i: i + self.config.seq_len]
+                            for i in range(self.config.batch_size)])
+        targets = torch.stack([tokens[i + 1: i + 1 + self.config.seq_len]
+                              for i in range(self.config.batch_size)])
         return batch, targets
 
-    def _load_data(self, path: Path) -> Iterator[bytes]:
+    def _load_data(self, path: Path) -> Iterator[str]:
         if not os.path.exists(path):
             raise FileNotFoundError(f'{path=} doesn\'t exist.')
         with open(path, 'rb') as file:
             # 4-bytes is the max size for a single UTF-8 character which is how
             # we're interpreting the file contents.
-            chunk_bytes = self.batch_size * self.seq_len * 4
+            chunk_bytes = self.config.batch_size * self.config.seq_len * 4
             while chunk := file.read(chunk_bytes):
                 yield chunk.decode('utf-8', errors='ignore')
