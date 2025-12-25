@@ -6,3 +6,4 @@ matplotlib==3.10.7
 tiktoken==0.12.0
 einops==0.8.1
 wakepy==0.10.2.post1
+parameterized==0.9.0
