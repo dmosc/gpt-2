@@ -16,23 +16,26 @@ class Config:
         self.batch_size = 16
         self.seq_len = 1024
         self.save_every_n_steps = 100
-        self.train_data_path = data_dir / 'TinyStoriesV2-GPT4-train.txt'
-        self.valid_data_path = data_dir / 'TinyStoriesV2-GPT4-valid.txt'
-        self.checkpoint_dir = data_dir / 'models'
+        self.data_dir = data_dir
+        self.train_data_path = self.data_dir / 'TinyStoriesV2-GPT4-train.txt'
+        self.valid_data_path = self.data_dir / 'TinyStoriesV2-GPT4-valid.txt'
+        self.checkpoint_dir = self.data_dir / 'models'
         self.state_file = Path('state.pkl')
         self.epochs = 10
         self.vocab_size = 5000
         self.lr = 1e-3
         self.betas = (0.9, 0.999)
         self.eps = 1e-8
-        self.weight_decay = 0.0
         self.special_tokens = [b'<|endoftext|>']
+
+    @staticmethod
+    def load_state_dict(state_dict: dict) -> 'Config':
+        config = Config(state_dict['data_dir'])
+        config.__dict__.update(state_dict)
+        return config
 
     def state_dict(self):
         return self.__dict__
-
-    def load_state_dict(self, state_dict):
-        self.__dict__.update(state_dict)
 
     def get_checkpoint_path(self, step: int) -> Path:
         path = self.checkpoint_dir / str(step) / self.state_file

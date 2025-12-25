@@ -14,23 +14,14 @@ class Metric:
 
 
 class Evaluator:
-    def __init__(self, leading_indicator: str = 'cross_entropy'):
+    def __init__(self, leading_indicator: str = 'cross_entropy',
+                 log_every_n_steps: int = 100):
         self.metrics: dict[str, Metric] = {
             'cross_entropy': Metric('cross_entropy'),
             'perplexity': Metric('perplexity')
         }
         self.leading_indicator = leading_indicator
-        self.log_every_n_steps = 100
-
-    @classmethod
-    def load_state_dict(cls, state: dict) -> 'Evaluator':
-        evaluator = cls(leading_indicator=state.get('leading_indicator',
-                                                    'cross_entropy'))
-        evaluator.log_every_n_steps = state.get('log_every_n_steps',
-                                                evaluator.log_every_n_steps)
-        for name, values in state.get('metrics', {}).items():
-            evaluator.metrics[name].values = [torch.tensor(v) for v in values]
-        return evaluator
+        self.log_every_n_steps = log_every_n_steps
 
     def evaluate(self, step: int, logits: torch.Tensor,
                  targets: torch.Tensor) -> torch.Tensor:
@@ -43,6 +34,14 @@ class Evaluator:
         if latest_measurement := self._pick_leading_metric().get_latest():
             return latest_measurement
         raise ValueError('No leading metric measurement available.')
+
+    @staticmethod
+    def load_state_dict(state_dict: dict) -> 'Evaluator':
+        evaluator = Evaluator(leading_indicator=state_dict['leading_indicator'])
+        evaluator.log_every_n_steps = state_dict['log_every_n_steps']
+        for name, values in state_dict.get('metrics', {}).items():
+            evaluator.metrics[name].values = [torch.tensor(v) for v in values]
+        return evaluator
 
     def state_dict(self) -> dict:
         return {
