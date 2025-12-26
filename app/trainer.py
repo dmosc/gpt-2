@@ -15,16 +15,8 @@ class Trainer:
 
     def train_model(self):
         print('Training model...')
-        tokenizer = Tokenizer()
-        tokenizer.load()
-        model = LanguageModel(self.config)
-        scheduler = CosAnnealingScheduler(self.config)
-        optimizer = AdamW(list(model.parameters()), self.config)
-        dataloader = DataLoader(self.config, tokenizer)
-        evaluator = Evaluator()
-
+        dataloader, model, optimizer, scheduler, evaluator, step = self._unpack_training_components()
         for epoch in range(self.config.epochs):
-            step = 0
             print(f'{epoch=}')
             while data_paylaod := dataloader.get_next_batch():
                 batch, targets = data_paylaod
@@ -53,3 +45,26 @@ class Trainer:
         tokenizer = Tokenizer()
         tokenizer.train(self.config.valid_data_path, self.config.vocab_size,
                         self.config.special_tokens)
+
+    def _unpack_training_components(self) -> tuple[DataLoader, LanguageModel, AdamW, CosAnnealingScheduler, Evaluator, int]:
+        tokenizer = Tokenizer()
+        tokenizer.load()
+        dataloader = DataLoader(self.config, tokenizer)
+        scheduler = CosAnnealingScheduler(self.config)
+
+        if self.config.checkpoint_path:
+            print(
+                f'Resuming training from checkpoint: {self.config.checkpoint_path}')
+            model, optimizer, evaluator, _ = Checkpointer.load_checkpoint(
+                self.config.checkpoint_path)
+            # Second to last value in the .parts attribute of the path is the
+            # step number the checkpoint was saved at. We recoup it like this
+            # and use it to sync the initial step number with the loaded
+            # checkpoint.
+            step = int(self.config.checkpoint_path.parts[-2])
+            return dataloader, model, optimizer, scheduler, evaluator, step
+        else:
+            model = LanguageModel(self.config)
+            optimizer = AdamW(list(model.parameters()), self.config)
+            evaluator = Evaluator()
+            return dataloader, model, optimizer, scheduler, evaluator, 0

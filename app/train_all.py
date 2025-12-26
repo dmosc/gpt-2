@@ -17,10 +17,14 @@ if __name__ == '__main__':
                                      description='Train tokenizer and model sequentially.',
                                      epilog='Example usage: python app/train_all.py --skip_tokenizer_training')
     parser.add_argument('--skip_tokenizer_training', action='store_true')
+    parser.add_argument('--checkpoint_path', type=str, default=None,
+                        help='Path to a model checkpoint to resume training from.')
     args = parser.parse_args()
     with keep.presenting():
         data_dir = Path(__file__).parent / 'data'
-        config = Config(data_dir)
+        checkpoint_path = Path(
+            args.checkpoint_path) if args.checkpoint_path else None
+        config = Config(data_dir, checkpoint_path)
         trainer = Trainer(config)
         if args.skip_tokenizer_training:
             print("Skipping tokenizer training. Loading from memory.")

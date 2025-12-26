@@ -1,8 +1,9 @@
+from typing import Optional
 from pathlib import Path
 
 
 class Config:
-    def __init__(self, data_dir: Path):
+    def __init__(self, data_dir: Path, checkpoint_path: Optional[Path] = None):
         self.d_model = 128
         self.num_heads = 8
         self.d_ff = int(8 / 3 * self.d_model)
@@ -17,6 +18,7 @@ class Config:
         self.seq_len = 1024
         self.save_every_n_steps = 100
         self.data_dir = data_dir
+        self.checkpoint_path = checkpoint_path
         self.train_data_path = self.data_dir / 'TinyStoriesV2-GPT4-train.txt'
         self.valid_data_path = self.data_dir / 'TinyStoriesV2-GPT4-valid.txt'
         self.checkpoint_dir = self.data_dir / 'models'
