@@ -1,7 +1,7 @@
 import torch
 import unittest
 
-from app.model.feed_forward import FeedForward
+from model.feed_forward import FeedForward
 
 
 class TestFeedForward(unittest.TestCase):
