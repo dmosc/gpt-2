@@ -3,7 +3,7 @@ import unittest
 
 from parameterized import parameterized
 
-from app.model.modules.embedding import Embedding
+from app.model.embedding import Embedding
 
 
 class TestEmbedding(unittest.TestCase):

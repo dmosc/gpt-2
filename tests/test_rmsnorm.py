@@ -3,7 +3,7 @@ import unittest
 
 from parameterized import parameterized
 
-from app.model.modules.rmsnorm import RMSNorm
+from app.model.rmsnorm import RMSNorm
 
 
 class TestRMSNorm(unittest.TestCase):

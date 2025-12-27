@@ -3,7 +3,7 @@ import unittest
 
 from unittest.mock import MagicMock
 
-from app.model.modules.transformer import Transformer
+from app.model.transformer import Transformer
 
 
 class TestTransformer(unittest.TestCase):

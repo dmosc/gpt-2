@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 from wakepy import keep
 from trainer import Trainer
-from model.modules.config import Config
+from model.config import Config
 
 
 if __name__ == '__main__':

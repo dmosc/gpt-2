@@ -3,7 +3,7 @@ import unittest
 
 from parameterized import parameterized
 
-from app.model.modules.linear import Linear
+from app.model.linear import Linear
 
 
 class TestLinear(unittest.TestCase):

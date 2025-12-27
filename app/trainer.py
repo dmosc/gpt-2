@@ -1,12 +1,12 @@
-from model.modules.language_model import LanguageModel
-from model.modules.config import Config
-from model.modules.optimizers.adamw import AdamW
-from model.modules.schedulers.cos_annealing import CosAnnealingScheduler
-from model.modules.utils.evaluator import Evaluator
-from model.modules.utils.grad_clip import grad_clip
-from model.modules.utils.dataloader import DataLoader
-from model.modules.utils.checkpointer import Checkpointer
-from model.modules.utils.tokenizer import Tokenizer
+from model.language_model import LanguageModel
+from model.config import Config
+from model.optimizers.adamw import AdamW
+from model.schedulers.cos_annealing import CosAnnealingScheduler
+from model.utils.evaluator import Evaluator
+from model.utils.grad_clip import grad_clip
+from model.utils.dataloader import DataLoader
+from model.utils.checkpointer import Checkpointer
+from model.utils.tokenizer import Tokenizer
 
 
 class Trainer:
