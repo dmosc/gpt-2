@@ -10,12 +10,12 @@ class Config:
         self.d_ff = int(8 / 3 * self.d_model)
         self.max_seq_len = 1024
         self.num_layers = 4
-        self.max_lr = 3e-2
-        self.min_lr = 3e-3
+        self.max_lr = 1e-2
+        self.min_lr = 1e-3
         self.warmup_steps = 1000
         self.max_steps = 3000
-        self.weight_decay = 0.1
-        self.batch_size = 16
+        self.weight_decay = 1e-2
+        self.batch_size = 64
         self.seq_len = 1024
         self.save_every_n_steps = 100
         self.data_dir = data_dir
@@ -30,6 +30,7 @@ class Config:
         self.betas = (0.9, 0.999)
         self.eps = 1e-8
         self.special_tokens = [b'<|endoftext|>']
+        self.created_new_revision = False
 
     @staticmethod
     def load_state_dict(state_dict: dict) -> 'Config':
@@ -42,6 +43,20 @@ class Config:
 
     def get_checkpoint_path(self, num_params: int, step: int) -> Path:
         model_specs = f'{numerize.numerize(num_params)}_{numerize.numerize(self.seq_len)}'
-        path = self.checkpoint_dir / model_specs / str(step) / self.state_file
+        model_dir = Path(self.checkpoint_dir) / model_specs
+        revision = self._get_revision(model_dir)
+        path = model_dir / str(revision) / str(step) / self.state_file
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
+
+    def _get_revision(self, model_dir: Path):
+        if self.checkpoint_path:
+            *_, revision, __, ___ = self.checkpoint_path.parts
+            return revision
+        revision = max([int(d.name) for d in model_dir.iterdir()
+                       if d.is_dir() and d.name.isdigit()], default=0)
+        if not self.created_new_revision:
+            revision += 1
+            self.created_new_revision = True
+            print(f'Creating revision {revision} for the first time.')
+        return revision
