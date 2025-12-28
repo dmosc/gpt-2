@@ -69,8 +69,10 @@ class Tokenizer:
                 idx = 0
                 existing_merge = merge[0] + merge[1]
                 while idx < len(tokens) - 1:
-                    potential_merge = self.reverse_vocab[tokens[idx]
-                                                         ] + self.reverse_vocab[tokens[idx + 1]]
+                    potential_merge = (
+                        self.reverse_vocab[tokens[idx]] +
+                        self.reverse_vocab[tokens[idx + 1]]
+                    )
                     if potential_merge == existing_merge:
                         tokens[idx] = self.vocab[potential_merge]
                         del tokens[idx + 1]
