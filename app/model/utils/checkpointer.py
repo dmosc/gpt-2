@@ -10,10 +10,12 @@ from ..optimizers.adamw import AdamW
 
 class Checkpointer:
     @staticmethod
-    def save_checkpoint(step: int, model: torch.nn.Module,
+    def save_checkpoint(step: int, model: LanguageModel,
                         optimizer: torch.optim.Optimizer, evaluator: Evaluator,
                         config: Config):
-        path = config.get_checkpoint_path(step)
+        total_params = sum(p.numel()
+                           for p in model.parameters() if p.requires_grad)
+        path = config.get_checkpoint_path(total_params, step)
         if path.exists():
             print(f'{path} already exists; overwriting it...')
         state = {

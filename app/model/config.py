@@ -1,5 +1,6 @@
 from typing import Optional
 from pathlib import Path
+from numerize import numerize
 
 
 class Config:
@@ -39,7 +40,8 @@ class Config:
     def state_dict(self):
         return self.__dict__
 
-    def get_checkpoint_path(self, step: int) -> Path:
-        path = self.checkpoint_dir / str(step) / self.state_file
+    def get_checkpoint_path(self, num_params: int, step: int) -> Path:
+        model_specs = f'{numerize.numerize(num_params)}_{numerize.numerize(self.seq_len)}'
+        path = self.checkpoint_dir / model_specs / str(step) / self.state_file
         path.parent.mkdir(parents=True, exist_ok=True)
         return path
