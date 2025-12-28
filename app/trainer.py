@@ -34,7 +34,7 @@ class Trainer:
                 targets = targets.reshape(-1)
                 loss = evaluator.evaluate(step, logits, targets)
                 loss.backward()
-                grad_clip(model.parameters(), max_norm=0.1)
+                grad_clip(model.parameters(), max_norm=self.config.max_norm)
                 optimizer.step()
                 step += 1
                 if step % self.config.save_every_n_steps == 0:

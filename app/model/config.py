@@ -12,7 +12,7 @@ class Config:
         self.num_layers = 4
         self.max_lr = 1e-2
         self.min_lr = 1e-3
-        self.warmup_steps = 1000
+        self.warmup_steps = 1500
         self.max_steps = 3000
         self.weight_decay = 1e-2
         self.batch_size = 64
@@ -29,6 +29,7 @@ class Config:
         self.lr = 3e-3
         self.betas = (0.9, 0.999)
         self.eps = 1e-8
+        self.max_norm = 1.0
         self.special_tokens = [b'<|endoftext|>']
         self.created_new_revision = False
 
