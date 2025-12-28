@@ -15,8 +15,9 @@ class Config:
         self.warmup_steps = 1500
         self.max_steps = 3000
         self.weight_decay = 1e-2
-        self.batch_size = 64
+        self.batch_size = 32
         self.seq_len = 1024
+        self.skip_up_to_n_batches = 10
         self.save_every_n_steps = 100
         self.data_dir = data_dir
         self.checkpoint_path = checkpoint_path
@@ -25,7 +26,7 @@ class Config:
         self.checkpoint_dir = self.data_dir / 'models'
         self.state_file = Path('state.pkl')
         self.epochs = 10
-        self.vocab_size = 5000
+        self.vocab_size = 10_000
         self.lr = 3e-3
         self.betas = (0.9, 0.999)
         self.eps = 1e-8
@@ -54,6 +55,9 @@ class Config:
         if self.checkpoint_path:
             *_, revision, __, ___ = self.checkpoint_path.parts
             return revision
+        if not model_dir.exists():
+            self.created_new_revision = True
+            return 0
         revision = max([int(d.name) for d in model_dir.iterdir()
                        if d.is_dir() and d.name.isdigit()], default=0)
         if not self.created_new_revision:

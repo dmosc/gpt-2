@@ -18,7 +18,7 @@ class Trainer:
         dataloader, model, optimizer, scheduler, evaluator, step = self._unpack_training_components()
         for epoch in range(self.config.epochs):
             print(f'{epoch=}')
-            while data_paylaod := dataloader.get_next_batch():
+            while data_paylaod := dataloader.get_next_batch(randomize=True):
                 batch, targets = data_paylaod
                 # Update learning rates following a cosine annealing schedule.
                 lr = scheduler.get_lr(step)

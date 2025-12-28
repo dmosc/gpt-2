@@ -1,5 +1,9 @@
 import os
 import torch
+import random
+import itertools
+
+from collections import deque
 
 from pathlib import Path
 from typing import Iterator
@@ -14,8 +18,14 @@ class DataLoader:
         self.tokenizer = tokenizer
         self.data = self._load_data(self.config.train_data_path)
 
-    def get_next_batch(self) -> tuple[torch.Tensor, torch.Tensor] | None:
+    def get_next_batch(self,
+                       randomize: bool) -> tuple[torch.Tensor, torch.Tensor] | None:
         max_tokens = self.config.batch_size * (self.config.seq_len + 1)
+        if randomize:
+            skip_num_examples = random.randint(
+                0, self.config.skip_up_to_n_batches)
+            # Consume the next skip_num_examples items from the data iterator.
+            deque(itertools.islice(self.data, skip_num_examples), maxlen=0)
         data = next(iter(self.data), None)
         if data is None:
             # Reinitialize the pointer to iterate over all the data again.
