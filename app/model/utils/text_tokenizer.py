@@ -11,28 +11,13 @@ from .tokenizer import Tokenizer
 
 
 class TextTokenizer(Tokenizer):
-    default_chunk_size_bytes = 100_000  # 100 KB
-    default_parallel_processes = os.cpu_count()
     # OpenAI's Tiktoken pre-tokenizer regex pattern:
     # https://github.com/openai/tiktoken/pull/234/files
     pretokenizer_pattern = r"""'s|'t|'re|'ve|'m|'ll|'d| ?[\\p{L}]+| ?[\\p{N}]+| ?[^\s\\p{L}\\p{N}]+|\s+(?!\S)|\s+"""
-    pretokens_path_prefix = Path('/tmp/gpt-2')
-    vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
     end_of_chunk_split_token = b'<|endoftext|>'
 
-    @property
-    def reverse_vocab(self):
-        """
-        Returns self.vocab with keys and values reversed.
-        """
-        if hasattr(self, '_reverse_vocab'):
-            return self._reverse_vocab
-        if self.vocab:
-            self._reverse_vocab = {v: k for v, k in enumerate(self.vocab)}
-            return self._reverse_vocab
-        else:
-            raise ValueError(
-                'Tokenizer hasn\'t been initialized. Run .train().')
+    def __init__(self):
+        super().__init__()
 
     @time_func
     def load(self, vocab_file_path: Optional[Path] = None) -> None:

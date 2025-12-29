@@ -1,3 +1,5 @@
+import os
+
 from pathlib import Path
 from typing import Optional
 from abc import ABC, abstractmethod
@@ -6,13 +8,25 @@ from .perf_utils import time_func
 
 
 class Tokenizer(ABC):
+    default_chunk_size_bytes = 100_000  # 100 KB
+    default_parallel_processes = os.cpu_count()
+    pretokens_path_prefix = Path('/tmp/gpt-tmp')
+    vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
+    vocab = None
+
     @property
-    @abstractmethod
-    def reverse_vocab(self) -> dict[int, bytes]:
+    def reverse_vocab(self):
         """
         Returns self.vocab with keys and values reversed.
         """
-        pass
+        if hasattr(self, '_reverse_vocab'):
+            return self._reverse_vocab
+        if self.vocab:
+            self._reverse_vocab = {v: k for v, k in enumerate(self.vocab)}
+            return self._reverse_vocab
+        else:
+            raise ValueError(
+                'Tokenizer hasn\'t been initialized. Run .train().')
 
     @time_func
     @abstractmethod
