@@ -1,7 +1,10 @@
 import os
+import pickle
 
+from multiprocessing import Pool
+from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from abc import ABC, abstractmethod
 
 from .perf_utils import time_func
@@ -54,7 +57,6 @@ class Tokenizer(ABC):
         pass
 
     @time_func
-    @abstractmethod
     def decode(self, tokens: list[int]) -> str:
         """
         Decodes a sequence of bytes into a UTF-8 Unicode string by joining
@@ -66,10 +68,12 @@ class Tokenizer(ABC):
         Returns:
             str: String decoded in UTF-8 Unicode format.
         """
-        pass
+        sequence_bytes = b''
+        for token in tokens:
+            sequence_bytes += self.reverse_vocab[token]
+        return sequence_bytes.decode('utf-8', errors='replace')
 
     @time_func
-    @abstractmethod
     def train(self, dataset_path: Path, max_vocab_size: int,
               special_tokens: list[bytes]) -> None:
         """
@@ -80,7 +84,27 @@ class Tokenizer(ABC):
             max_vocab_size (int): Maximum size of the vocabulary.
             special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
         """
-        pass
+        self._process_chunks(dataset_path)
+        token_freqs = self._get_token_freqs(special_tokens)
+        vocab_payload = self._build_vocab(max_vocab_size,
+                                          special_tokens, token_freqs)
+        self._save_vocab(vocab_payload)
+        self._flush_pretokens()
+
+    def _process_chunks(self, dataset_path: Path):
+        """
+        Applies _process_chunk(...) to multiple dataset chunks in parallel.
+
+        Args:
+            dataset_path (Path): Path to the training dataset file.
+        """
+        chunk_offsets = self._get_dataset_chunk_offsets(dataset_path)
+        iterable_args = zip([dataset_path] * (len(chunk_offsets) - 1),
+                            chunk_offsets[:-1], chunk_offsets[1:])
+        print(f'Tokenizer: Tokenizing {len(chunk_offsets) - 1} chunks '
+              f'using {self.default_parallel_processes} parallel processes...')
+        with Pool(processes=self.default_parallel_processes) as pool:
+            pool.starmap(self._process_chunk, iterable_args)
 
     def _get_dataset_chunk_offsets(self, dataset_path: Path) -> list[int]:
         """
@@ -122,3 +146,72 @@ class Tokenizer(ABC):
                             chunk_offsets[i] += split_token_idx
                             break
             return sorted(set(chunk_offsets))
+
+    @abstractmethod
+    def _process_chunk(self, dataset_path: Path, start_offset: int,
+                       end_offset: int):
+        """
+        Pretokenizes a chunk region from dataset_path delimited by start_offset
+        and end_offset pointers.
+
+        Args:
+            dataset_path (Path): Path to the training dataset file.
+            start_offset (int): Starting index to initialize the file reading.
+            end_offset (int): Final index to finish the file reading.
+        """
+        raise NotImplementedError(
+            'You must implement _process_chunk to process the dataset.')
+
+    def _get_token_freqs(self,
+                         special_tokens: list[bytes]) -> dict[tuple[bytes], int]:
+        """
+        Load pretoken and compute frequencies across all files.
+
+        Args:
+            special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
+        """
+        token_files = list(
+            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        token_freqs: dict[tuple[bytes], int] = defaultdict(int)
+        for tokens_file in token_files:
+            with open(tokens_file, 'rb') as file:
+                for token in pickle.load(file):
+                    if token in special_tokens:
+                        continue
+                    token_freqs[tuple(token)] += 1
+        return token_freqs
+
+    @abstractmethod
+    def _build_vocab(self, max_vocab_size: int,
+                     special_tokens: list[bytes],
+                     token_freqs: dict[tuple[bytes], int]) -> tuple[Any, ...]:
+        """
+        Builds the vocabulary.
+
+        Args:
+            max_vocab_size (int): Maximum size of the vocabulary.
+            special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
+        """
+        raise NotImplementedError(
+            'You must implement _build_vocab to process input sequences.')
+
+    def _save_vocab(self, vocab_payload: tuple[Any, ...]):
+        """
+        Saves the vocabulary to disk.
+
+        Args:
+            vocab_payload: An arbitrary-sized tuple of objects to save.
+        """
+        print('Tokenizer: Saving final vocabulary...')
+        with open(self.vocab_file_path, 'wb') as file:
+            pickle.dump(vocab_payload, file)
+
+    def _flush_pretokens(self):
+        """
+        Deletes temporary pretoken files to free up space.
+        """
+        print('Tokenizer: Cleaning up temporary pretoken files...')
+        pretoken_files = list(
+            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        for pretokens_file in pretoken_files:
+            os.remove(pretokens_file)

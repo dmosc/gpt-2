@@ -1,12 +1,9 @@
-import os
 import re
-from multiprocessing import Pool
 from collections import defaultdict
 from pathlib import Path
 import pickle
 from typing import Optional
 
-from .perf_utils import time_func
 from .tokenizer import Tokenizer
 
 
@@ -19,7 +16,6 @@ class TextTokenizer(Tokenizer):
     def __init__(self):
         super().__init__()
 
-    @time_func
     def load(self, vocab_file_path: Optional[Path] = None) -> None:
         """
         Loads the vocabulary from disk.
@@ -33,7 +29,6 @@ class TextTokenizer(Tokenizer):
         with open(vocab_file_path, 'rb') as file:
             self.vocab, self.merges = pickle.load(file)
 
-    @time_func
     def encode(self, sequence: str) -> list[int]:
         """
         Encodes the input sequence into a list of token IDs using the trained vocabulary.
@@ -67,63 +62,9 @@ class TextTokenizer(Tokenizer):
                         idx += 1
             all_tokens.extend(tokens)
         return all_tokens
-
-    @time_func
-    def decode(self, tokens: list[int]) -> str:
-        """
-        Decodes a sequence of bytes into a UTF-8 Unicode string by joining
-        tokens from the learned vocabulary.
-
-        Args:
-            tokens (list[int]): The list of tokens to decode.
-
-        Returns:
-            str: String decoded in UTF-8 Unicode format.
-        """
-        sequence_bytes = b''
-        for token in tokens:
-            sequence_bytes += self.reverse_vocab[token]
-        return sequence_bytes.decode('utf-8', errors='replace')
-
-    @time_func
-    def train(self, dataset_path: Path, max_vocab_size: int,
-              special_tokens: list[bytes]) -> None:
-        """
-        Trains the tokenizer on the given dataset to build a vocabulary.
-
-        Args:
-            dataset_path (Path): Path to the training dataset file.
-            max_vocab_size (int): Maximum size of the vocabulary.
-            special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
-        """
-        # Pre-tokenize dataset in parallel chunks and save to temporary files.
-        chunk_offsets = self._get_dataset_chunk_offsets(dataset_path)
-        iterable_args = zip([dataset_path] * (len(chunk_offsets) - 1),
-                            chunk_offsets[:-1], chunk_offsets[1:])
-        print(f'Tokenizer: Pre-tokenizing {len(chunk_offsets) - 1} chunks '
-              f'using {self.default_parallel_processes} parallel processes...')
-        with Pool(processes=self.default_parallel_processes) as pool:
-            pool.starmap(self._pretokenize_file_chunk, iterable_args)
-
-        # Build vocabulary from pretokenized files
-        self.vocab, self.merges = self._build_vocab(max_vocab_size,
-                                                    special_tokens)
-        self._save_vocab(self.vocab, self.merges)
-
-        # Clean up temporary pretoken files
-        self._flush_pretokens()
-
-    def _pretokenize_file_chunk(self, dataset_path: Path, start_offset: int,
-                                end_offset: int) -> None:
-        """
-        Pretokenizes a chunk region from dataset_path delimited by start_offset
-        and end_offset pointers.
-
-        Args:
-            dataset_path (Path): Path to the training dataset file.
-            start_offset (int): Starting index to initialize the file reading.
-            end_offset (int): Final index to finish the file reading.
-        """
+    
+    def _process_chunk(self, dataset_path: Path, start_offset: int,
+                       end_offset: int):
         # Read chunk from dataset and pretokenize.
         pretokens: list[bytes] = []
         with open(dataset_path, 'rb') as file:
@@ -141,7 +82,8 @@ class TextTokenizer(Tokenizer):
 
     def _pretokenize_sequence(self, sequence: str) -> list[bytes]:
         """
-        Pretokenizes a single byte sequence using the pretokenizer regex pattern.
+        Pretokenizes a single byte sequence using the pretokenizer regex
+        pattern.
 
         Args:
             sequence (str): The string sequence to pretokenize.
@@ -153,7 +95,8 @@ class TextTokenizer(Tokenizer):
         matches = pattern.finditer(sequence)
         return [match.group().encode('utf-8') for match in matches]
 
-    def _build_vocab(self, max_vocab_size: int, special_tokens: list[bytes]) -> tuple[dict[bytes, int], list[tuple[bytes, bytes]]]:
+    def _build_vocab(self, max_vocab_size: int, special_tokens: list[bytes],
+                     token_freqs: dict[tuple[bytes], int]) -> tuple[dict[bytes, int], list[tuple[bytes, bytes]]]:
         """
         Builds the vocabulary from pretokenized files and performs BPE merging.
 
@@ -161,22 +104,12 @@ class TextTokenizer(Tokenizer):
             max_vocab_size (int): Maximum size of the vocabulary.
             special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
         """
-        # Load pretoken and compute frequencies across all files.
-        pretoken_files = list(
-            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
-        pretoken_freqs: dict[tuple[bytes], int] = defaultdict(int)
-        for pretokens_file in pretoken_files:
-            with open(pretokens_file, 'rb') as file:
-                for pretoken in pickle.load(file):
-                    if pretoken in special_tokens:
-                        continue
-                    pretoken_freqs[tuple(pretoken)] += 1
-
         # Initialize vocabulary and reverse vocabulary.
         vocab, reverse_vocab = self._init_vocab(special_tokens)
         # Perform BPE merging to build vocabulary.
         vocab, reverse_vocab, merges = self._bpe_merge(vocab, reverse_vocab,
-                                                       pretoken_freqs, max_vocab_size)
+                                                       token_freqs,
+                                                       max_vocab_size)
         return vocab, merges
 
     def _init_vocab(self, special_tokens: list[bytes]) -> tuple[dict[bytes, int], dict[int, bytes]]:
@@ -253,21 +186,3 @@ class TextTokenizer(Tokenizer):
 
         print(f'Tokenizer: Final vocabulary size: {len(vocab)}')
         return vocab, reverse_vocab, merges
-
-    def _save_vocab(self, vocab: dict[bytes, int], merges: list[tuple[bytes, bytes]]) -> None:
-        """
-        Saves the vocabulary to disk.
-        """
-        print('Tokenizer: Saving final vocabulary...')
-        with open(self.vocab_file_path, 'wb') as file:
-            pickle.dump((vocab, merges), file)
-
-    def _flush_pretokens(self) -> None:
-        """
-        Deletes temporary pretoken files to free up space.
-        """
-        print('Tokenizer: Cleaning up temporary pretoken files...')
-        pretoken_files = list(
-            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
-        for pretokens_file in pretoken_files:
-            os.remove(pretokens_file)

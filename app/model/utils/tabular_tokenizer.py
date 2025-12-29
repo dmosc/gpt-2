@@ -23,6 +23,3 @@ class TabularTokenizer(Tokenizer):
         with open(vocab_file_path, 'rb') as file:
             self.vocab = pickle.load(file)
 
-    def train(self, dataset_path: Path, max_vocab_size: int,
-              special_tokens: list[bytes]):
-        chunk_offsets = self._get_dataset_chunk_offsets(dataset_path)
