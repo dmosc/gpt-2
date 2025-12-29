@@ -6,7 +6,7 @@ from model.utils.evaluator import Evaluator
 from model.utils.grad_clip import grad_clip
 from model.utils.dataloader import DataLoader
 from model.utils.checkpointer import Checkpointer
-from model.utils.tokenizer import Tokenizer
+from model.utils.text_tokenizer import Tokenizer
 
 
 class Trainer:
