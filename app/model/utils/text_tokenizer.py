@@ -74,7 +74,7 @@ class TextTokenizer(Tokenizer):
                 chunk.decode('utf-8', errors='ignore'))
 
         # Save pretokens to temporary file.
-        pretokens_file_path = self.pretokens_path_prefix / \
+        pretokens_file_path = self.tmp_dir_path / \
             f'pretokens_{start_offset}_{end_offset}.pkl'
         pretokens_file_path.parent.mkdir(parents=True, exist_ok=True)
         with open(pretokens_file_path, 'wb') as file:

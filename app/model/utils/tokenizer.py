@@ -13,8 +13,8 @@ from .perf_utils import time_func
 class Tokenizer(ABC):
     default_chunk_size_bytes = 100_000  # 100 KB
     default_parallel_processes = os.cpu_count()
-    pretokens_path_prefix = Path('/tmp/gpt-tmp')
-    vocab_file_path = pretokens_path_prefix / 'vocab.pkl'
+    tmp_dir_path = Path('/tmp/gpt-tmp')
+    vocab_file_path = tmp_dir_path / 'vocab.pkl'
     vocab = None
     document_split_token = None
 
@@ -170,8 +170,7 @@ class Tokenizer(ABC):
         Args:
             special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
         """
-        token_files = list(
-            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        token_files = list(self.tmp_dir_path.glob('pretokens_*.pkl'))
         token_freqs: dict[tuple[bytes], int] = defaultdict(int)
         for tokens_file in token_files:
             with open(tokens_file, 'rb') as file:
@@ -211,7 +210,6 @@ class Tokenizer(ABC):
         Deletes temporary pretoken files to free up space.
         """
         print('Tokenizer: Cleaning up temporary pretoken files...')
-        pretoken_files = list(
-            self.pretokens_path_prefix.glob('pretokens_*.pkl'))
+        pretoken_files = list(self.tmp_dir_path.glob('pretokens_*.pkl'))
         for pretokens_file in pretoken_files:
             os.remove(pretokens_file)
