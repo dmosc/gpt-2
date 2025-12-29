@@ -6,7 +6,7 @@ from model.utils.evaluator import Evaluator
 from model.utils.grad_clip import grad_clip
 from model.utils.dataloader import DataLoader
 from model.utils.checkpointer import Checkpointer
-from model.utils.text_tokenizer import Tokenizer
+from model.utils.text_tokenizer import TextTokenizer
 
 
 class Trainer:
@@ -42,12 +42,12 @@ class Trainer:
                                                  evaluator, self.config)
 
     def train_tokenizer(self):
-        tokenizer = Tokenizer()
+        tokenizer = TextTokenizer()
         tokenizer.train(self.config.valid_data_path, self.config.vocab_size,
                         self.config.special_tokens)
 
     def _unpack_training_components(self) -> tuple[DataLoader, LanguageModel, AdamW, CosAnnealingScheduler, Evaluator, int]:
-        tokenizer = Tokenizer()
+        tokenizer = TextTokenizer()
         tokenizer.load()
         dataloader = DataLoader(self.config, tokenizer)
         scheduler = CosAnnealingScheduler(self.config)

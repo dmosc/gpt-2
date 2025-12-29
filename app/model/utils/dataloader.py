@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Iterator
 
 from ..config import Config
-from ..utils.text_tokenizer import Tokenizer
+from ..utils.tokenizer import Tokenizer
 
 
 class DataLoader:

@@ -7,9 +7,10 @@ import pickle
 from typing import Optional
 
 from .perf_utils import time_func
+from .tokenizer import Tokenizer
 
 
-class Tokenizer:
+class TextTokenizer(Tokenizer):
     default_chunk_size_bytes = 100_000  # 100 KB
     default_parallel_processes = os.cpu_count()
     # OpenAI's Tiktoken pre-tokenizer regex pattern:
