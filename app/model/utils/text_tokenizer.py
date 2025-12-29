@@ -113,47 +113,6 @@ class TextTokenizer(Tokenizer):
         # Clean up temporary pretoken files
         self._flush_pretokens()
 
-    def _get_dataset_chunk_offsets(self, dataset_path: Path) -> list[int]:
-        """
-        Find indices to appropriately split a provided dataset file using the
-        end_of_chunk_split_token value to semantically separate documents being
-        ingested from the same dataset_path source.
-
-        Args:
-            dataset_path (Path): Path to the training dataset file.
-        """
-        with open(dataset_path, 'rb') as file:
-            dataset_size_bytes = os.path.getsize(dataset_path)
-            chunk_size_bytes = min(
-                self.default_chunk_size_bytes, dataset_size_bytes)
-            chunk_count = dataset_size_bytes // chunk_size_bytes
-            # Initial, evenly spaced chunk offsets
-            chunk_offsets: list[int] = []
-            for i in range(chunk_count):
-                chunk_offsets.append(i * chunk_size_bytes)
-            chunk_offsets.append(dataset_size_bytes)
-            # Potentially cut short or extend chunks to nearest
-            # end_of_chunk_split_token to align chunks with text boundaries
-            #
-            # Look ahead 4 KiB at a time to find the nearest split token
-            look_ahead_size = 4 * 1024
-            with open(dataset_path, 'rb') as file:
-                for i in range(1, len(chunk_offsets) - 1):
-                    curr_offset = chunk_offsets[i]
-                    file.seek(curr_offset)
-                    while True:
-                        chunk = file.read(look_ahead_size)
-                        if not chunk:
-                            break
-                        split_token_idx = chunk.find(
-                            self.end_of_chunk_split_token)
-                        if split_token_idx == -1:
-                            curr_offset += look_ahead_size
-                        else:
-                            chunk_offsets[i] += split_token_idx
-                            break
-            return sorted(set(chunk_offsets))
-
     def _pretokenize_file_chunk(self, dataset_path: Path, start_offset: int,
                                 end_offset: int) -> None:
         """
