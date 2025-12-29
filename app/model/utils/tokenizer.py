@@ -36,7 +36,8 @@ class Tokenizer(ABC):
     @abstractmethod
     def load(self, vocab_file_path: Optional[Path] = None) -> None:
         """
-        Loads the vocabulary from disk.
+        Loads the vocabulary from disk. Use this method to initialize
+        self.vocab.
 
         Args:
             vocab_file_path (Path): Path to the vocabulary file.

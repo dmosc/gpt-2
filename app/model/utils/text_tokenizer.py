@@ -8,13 +8,12 @@ from .tokenizer import Tokenizer
 
 
 class TextTokenizer(Tokenizer):
-    # OpenAI's Tiktoken pre-tokenizer regex pattern:
-    # https://github.com/openai/tiktoken/pull/234/files
-    pretokenizer_pattern = r"""'s|'t|'re|'ve|'m|'ll|'d| ?[\\p{L}]+| ?[\\p{N}]+| ?[^\s\\p{L}\\p{N}]+|\s+(?!\S)|\s+"""
-    end_of_chunk_split_token = b'<|endoftext|>'
-
     def __init__(self):
         super().__init__()
+        # OpenAI's Tiktoken pre-tokenizer regex pattern:
+        # https://github.com/openai/tiktoken/pull/234/files
+        self.pretokenizer_pattern = r"""'s|'t|'re|'ve|'m|'ll|'d| ?[\\p{L}]+| ?[\\p{N}]+| ?[^\s\\p{L}\\p{N}]+|\s+(?!\S)|\s+"""
+        self.document_split_token = b'<|endoftext|>'
 
     def load(self, vocab_file_path: Optional[Path] = None) -> None:
         """
@@ -62,7 +61,7 @@ class TextTokenizer(Tokenizer):
                         idx += 1
             all_tokens.extend(tokens)
         return all_tokens
-    
+
     def _process_chunk(self, dataset_path: Path, start_offset: int,
                        end_offset: int):
         # Read chunk from dataset and pretokenize.
