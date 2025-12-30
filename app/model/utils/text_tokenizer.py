@@ -104,14 +104,12 @@ class TextTokenizer(Tokenizer):
             special_tokens (list[bytes]): List of special tokens to include in the vocabulary.
         """
         # Initialize vocabulary and reverse vocabulary.
-        vocab, reverse_vocab = self._init_vocab(special_tokens)
+        self.vocab = self._init_vocab(special_tokens)
         # Perform BPE merging to build vocabulary.
-        vocab, reverse_vocab, merges = self._bpe_merge(vocab, reverse_vocab,
-                                                       token_freqs,
-                                                       max_vocab_size)
-        return vocab, merges
+        self.merges = self._bpe_merge(token_freqs, max_vocab_size)
+        return self.vocab, self.merges
 
-    def _init_vocab(self, special_tokens: list[bytes]) -> tuple[dict[bytes, int], dict[int, bytes]]:
+    def _init_vocab(self, special_tokens: list[bytes]) -> dict[bytes, int]:
         """
         Initializes the vocabulary with single-byte tokens and special tokens.
 
@@ -124,20 +122,16 @@ class TextTokenizer(Tokenizer):
         vocab: dict[bytes, int] = {bytes([i]): i for i in range(256)}
         vocab.update(
             {token: 256 + i for i, token in enumerate(special_tokens)})
-        reverse_vocab: dict[int, bytes] = {
-            v: k for k, v in vocab.items()}
-        return vocab, reverse_vocab
+        return vocab
 
-    def _bpe_merge(self, vocab: dict[bytes, int],
-                   reverse_vocab: dict[int, bytes],
-                   pretoken_freqs: dict[tuple[bytes], int], max_vocab_size: int) -> tuple[dict[bytes, int], dict[int, bytes], list[tuple[bytes, bytes]]]:
+    def _bpe_merge(self, pretoken_freqs: dict[tuple[bytes], int],
+                   max_vocab_size: int) -> list[tuple[bytes, bytes]]:
         """
         Performs BPE merging iteratively until max_vocab_size is reached.
         Optimizes frequency calculation by only updating where merges occur.
 
         Args:
             vocab (dict[bytes, int]): Current vocabulary mapping tokens to IDs.
-            reverse_vocab (dict[int, bytes]): Reverse vocabulary mapping IDs to tokens.
             pretoken_freqs (dict[tuple[bytes], int]): Frequencies of pretokens.
             max_vocab_size (int): Maximum size of the vocabulary.
 
@@ -145,10 +139,10 @@ class TextTokenizer(Tokenizer):
             tuple[dict[bytes, int], dict[int, bytes], list[tuple[bytes, bytes]]]: The final vocabulary, reverse vocabulary, and list of merges.
         """
         merges: list[tuple[bytes, bytes]] = []
-        while len(vocab) < max_vocab_size:
-            if len(vocab) % 100 == 0:
+        while len(self.vocab) < max_vocab_size:
+            if len(self.vocab) % 100 == 0:
                 print(f'Tokenizer: BPE merging... Current vocab size: '
-                      f'{len(vocab)}')
+                      f'{len(self.vocab)}')
             # Compute byte pair frequencies.
             byte_pair_freqs: dict[tuple[bytes, bytes], int] = defaultdict(int)
             for pretoken, freq in pretoken_freqs.items():
@@ -159,12 +153,12 @@ class TextTokenizer(Tokenizer):
             # Find most frequent byte pair, merge it and add to vocab.
             most_frequent_pair = max(
                 byte_pair_freqs.items(), key=lambda item: item[1])[0]
-            token_1 = reverse_vocab[int(most_frequent_pair[0])]
-            token_2 = reverse_vocab[int(most_frequent_pair[1])]
+            token_1 = self.reverse_vocab[int(most_frequent_pair[0])]
+            token_2 = self.reverse_vocab[int(most_frequent_pair[1])]
             new_token = token_1 + token_2
-            new_token_id = len(vocab)
-            vocab[new_token] = new_token_id
-            reverse_vocab[new_token_id] = new_token
+            new_token_id = len(self.vocab)
+            self.vocab[new_token] = new_token_id
+            self.reverse_vocab[new_token_id] = new_token
             merges.append((token_1, token_2))
 
             # Merge byte pairs in pretoken frequencies.
@@ -183,5 +177,5 @@ class TextTokenizer(Tokenizer):
                 new_pretoken_freqs[tuple(merged_pretoken)] += freq
             pretoken_freqs = new_pretoken_freqs
 
-        print(f'Tokenizer: Final vocabulary size: {len(vocab)}')
-        return vocab, reverse_vocab, merges
+        print(f'Tokenizer: Final vocabulary size: {len(self.vocab)}')
+        return merges
